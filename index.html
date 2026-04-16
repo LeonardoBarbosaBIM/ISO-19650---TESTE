@@ -30,23 +30,34 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:13.
 .header h1 em{font-style:normal;color:var(--accent);font-weight:400}
 .header p{font-size:11px;color:var(--ink3);margin-top:2px}
 
-/* LINK LINKEDIN - ADICIONADO */
+/* LINK LINKEDIN */
 .ln-link {
     text-decoration:none; display:inline-flex; align-items:center; gap:6px; 
     margin-top:8px; padding: 4px 10px; background:var(--accent-mid); 
-    border-radius:4px; transition: 0.2s; border: 1px solid transparent;
+    border-radius:4px; transition: 0.2s;
 }
-.ln-link:hover { background: var(--accent-bg); transform: translateY(-1px); border-color: var(--accent3); }
+.ln-link:hover { background: var(--accent-bg); transform: translateY(-1px); }
 
 /* ABAS E NAVEGAÇÃO */
 .view-tabs{display:flex;gap:2px;background:var(--bg3);padding:3px;border-radius:var(--r-md);}
 .vtab{padding:6px 20px;border-radius:var(--r-sm);font-size:11.5px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--ink3);transition:all var(--t-base);}
 .vtab.active{background:var(--surface);color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,0.05)}
 
+.view{display:none; padding:20px 32px;}
+.view.show{display:block}
+
+/* KANBAN SIMPLIFICADO PARA O REESTRUTURAMENTO */
+.kanban-board{display:flex;gap:16px;overflow-x:auto;}
+.kb-col{flex:1;min-width:250px;background:var(--bg2);padding:12px;border-radius:var(--r-md);border:1px solid var(--border)}
+.kb-col h3{font-size:10px;text-transform:uppercase;color:var(--ink3);margin-bottom:12px;letter-spacing:1px}
+.card{background:var(--surface);padding:12px;border-radius:8px;border:1px solid var(--border);margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);cursor:pointer}
+.card:hover{border-color:var(--accent)}
+
 /* DRAWER */
 .guide-drawer{overflow:hidden;max-height:0;transition:max-height .38s ease;background:var(--bg2);border-bottom:0 solid var(--border)}
 .guide-drawer.open{max-height:500px;border-bottom:1px solid var(--border)}
 .guide-inner{padding:20px 32px}
+
 .guide-btn{width:26px;height:26px;border-radius:50%;border:1px solid var(--border2);background:transparent;cursor:pointer;margin-left:10px}
 </style>
 </head>
@@ -59,7 +70,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:13.
     
     <a href="https://www.linkedin.com/in/leonardobarbosabim/" target="_blank" class="ln-link">
       <svg width="14" height="14" fill="var(--accent)" viewBox="0 0 16 16"><path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854V1.146zm4.943 12.248V6.169H2.542v7.225h2.401zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248-.822 0-1.359.54-1.359 1.248 0 .694.521 1.248 1.327 1.248h.016zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016a5.54 5.54 0 0 1 .016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225h2.4z"/></svg>
-      <span style="color:var(--accent); font-weight:600; font-size:12px; font-family:var(--sans);">Leonardo Barbosa | BIM Manager</span>
+      <span style="color:var(--accent); font-weight:600; font-size:12px;">Leonardo Barbosa | BIM Manager</span>
     </a>
   </div>
 
@@ -69,6 +80,39 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:13.
     <button class="guide-btn" onclick="toggleGuide()">?</button>
   </div>
 </div>
+
+<div class="guide-drawer" id="guide-drawer">
+  <div class="guide-inner">
+    <h3>Fluxos Normativos da ISO 19650</h3>
+    <p style="font-size:12px; color:var(--ink3); margin-top:8px;">Consulte os itens 5.1 a 5.8 da norma para detalhes sobre a gestão de informação.</p>
+  </div>
+</div>
+
+<div id="view-kanban" class="view show">
+  <div class="kanban-board">
+    <div class="kb-col">
+      <h3>1. Requisitos (Appointing Party)</h3>
+      <div class="card"><strong>OIR</strong> - Req. de Informação da Organização</div>
+      <div class="card"><strong>PIR</strong> - Req. de Informação do Projeto</div>
+    </div>
+    <div class="kb-col">
+      <h3>2. Resposta (Lead Appointed Party)</h3>
+      <div class="card"><strong>Pre-BEP</strong> - Plano de Execução BIM Pré-contrato</div>
+    </div>
+    <div class="kb-col">
+      <h3>3. Produção (Appointed Party)</h3>
+      <div class="card"><strong>TIDP</strong> - Plano de Entrega de Informação da Tarefa</div>
+    </div>
+  </div>
+</div>
+
+<div id="view-gantt" class="view">
+  <div style="padding:40px; text-align:center; color:var(--ink3)">
+    Gráfico de Gantt — Cronograma de entregas conforme ISO 19650.
+  </div>
+</div>
+
+<script>
 function setView(name, btn) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('show'));
   document.querySelectorAll('.vtab').forEach(b => b.classList.remove('active'));
