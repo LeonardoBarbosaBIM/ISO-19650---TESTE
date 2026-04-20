@@ -1059,65 +1059,365 @@ function TabNiveis({p,upd}){
   </div>);
 }
 
+// ─── ISO EXAMPLES DATA ────────────────────────────────────────────────────────
+const ISO_EXAMPLES = {
+  oir:[
+    {item:"Objetivos estratégicos de gestão do ativo",title:"Objetivos estratégicos — exemplo OIR",type:"table",cols:["Objetivo","Indicador","Meta"],rows:[["Reduzir manutenção corretiva","% orçamento em corretiva","< 30%"],["Eficiência energética","kWh/m²/ano","Redução 20% em 5 anos"],["Dados BIM disponíveis","% elementos com params FM","> 95%"]],note:"O OIR não menciona projetos específicos. É permanente e serve de base para todos os projetos futuros da organização."},
+    {item:"Sistemas de negócio que consomem dados BIM",title:"Mapeamento de sistemas — exemplo OIR",type:"table",cols:["Sistema","Finalidade","Dados BIM","Formato"],rows:[["CAFM (Archibus)","Gestão de espaços","Salas, áreas, deptmtos","IFC + COBie Space"],["CMMS (IBM Maximo)","Manutenção preventiva","Equipamentos, garantia","COBie Component"],["ERP (SAP)","Contratação","Custos estimados","CSV"],["GIS","Localização de ativos","Coordenadas, georef.","IFC Geo"]]},
+    {item:"Nível de informação mínimo (LOI) por tipo de ativo",title:"LOI mínimo — exemplo OIR",type:"table",cols:["Tipo de ativo","LOI entrega","Parâmetros obrigatórios"],rows:[["Ar-condicionado","LOI 350","Fabricante, modelo, BTU, vazão, garantia"],["Quadro elétrico","LOI 350","Fabricante, kVA, disjuntores"],["Sprinkler","LOI 300","WBS_Code, Level, Flow_Rate"],["Estrutura","LOI 300","Material, seção, fck"]]},
+  ],
+  air:[
+    {item:"Parâmetros de operação e manutenção por elemento",title:"Parâmetros FM — exemplo AIR (Sprinkler)",type:"table",cols:["Parâmetro IFC","Tipo","Obrig.","Exemplo"],rows:[["Fabricante","IfcLabel","Sim","Victaulic"],["Modelo","IfcLabel","Sim","Series 727"],["Flow_Rate","IfcReal","Sim","2,5 L/min"],["Data_Instalacao","IfcDate","Sim","2025-03-15"],["Garantia_anos","IfcInteger","Sim","5"]]},
+    {item:"Sistemas e zonas de manutenção mapeados",title:"Zoneamento de manutenção — exemplo AIR",type:"table",cols:["Zona","Sistemas","Responsável FM","Frequência"],rows:[["Cobertura","HID, ELE, impermeabilização","Manutenção Predial","Trimestral"],["Subsolo","Bombeamento, elétrico, drenagem","Infraestrutura","Mensal"],["Fachada","Vedação, esquadrias","Facilities","Semestral"]]},
+  ],
+  eir:[
+    {item:"LOD (Nível de Desenvolvimento) por fase e disciplina",title:"Matriz LOD — exemplo EIR",type:"table",cols:["Disciplina","Est. Prel.","Anteprojeto","Proj. Exec.","As-built"],rows:[["Arquitetura (ARC)","LOD 200","LOD 300","LOD 350","LOD 400"],["Estrutura (STR)","LOD 200","LOD 300","LOD 350","LOD 400"],["HID / Sprinkler","LOD 100","LOD 300","LOD 350","LOD 400"],["Elétrica (ELE)","LOD 100","LOD 200","LOD 350","LOD 400"],["HVAC (MEC)","LOD 100","LOD 200","LOD 350","LOD 400"]],note:"LOD 300 = geometria precisa + parâmetros. LOD 350 = conexões entre sistemas. LOD 400 = pronto para fabricação."},
+    {item:"Softwares de autoria e coordenação aceitos",title:"Stack tecnológico aceito — exemplo EIR",type:"table",cols:["Categoria","Software","Versão mínima","Observação"],rows:[["Autoria ARC/STR","Autodesk Revit","2023","Exportação IFC 4.0 obrigatória"],["Autoria MEP","Revit MEP","2023","Shared parameters conforme IDS"],["Coordenação","Navisworks Manage","2023","Clash detection semanal"],["Validação IFC","Solibri Office","9.13+","Checagem contra IDS"],["CDE","ACC (Autodesk Docs)","Atual","Workflows ISO 19650 ativos"]]},
+    {item:"Padrão de nomenclatura de arquivos",title:"Convenção de nomenclatura — exemplo EIR",type:"code",code:`Padrão de arquivo:\n  {PROJETO}-{CONTRATADA}-{DISCIPLINA}-{FASE}-{TIPO}-{REV}\n\nExemplos:\n  PROJ-EMP-HID-G100-M3D-P07.rvt\n  PROJ-EMP-STR-G200-M3D-P12.ifc\n\nFases:\n  G100  Coordenação (LOD 300)\n  G200  Detalhamento (LOD 350)\n  G300  As-built     (LOD 400)`},
+    {item:"Protocolo de gestão de problemas (BCF, RFI)",title:"Protocolo BCF — exemplo EIR",type:"code",code:`Prioridades e prazos:\n  BLOCKER → impede publicação  → 3 dias úteis\n  MAJOR   → não conformidade   → 5 dias úteis\n  MINOR   → inconsistência     → 10 dias úteis\n  INFO    → dúvida / RFI       → 3 dias úteis\n\nCampos obrigatórios em toda issue:\n  - Título descritivo (máx 80 caracteres)\n  - Disciplinas afetadas\n  - GUID do elemento IFC vinculado\n  - Responsável e data limite\n  - Snapshot (mínimo 1 imagem)`},
+  ],
+  bep:[
+    {item:"Estratégia de produção da informação por disciplina",title:"Estratégia de produção HID — exemplo BEP",type:"code",code:`Disciplina:   HID (Supressão de Incêndio)\nSoftware:     Revit MEP 2024\n\nFluxo de entrega:\n  1. Produção local (WIP) → validação IDS local\n  2. Publicação em Shared: 2× por semana\n  3. Workflow de validação → Published: a cada milestone\n  4. Clash com STR e ARC: toda sexta-feira`},
+    {item:"Papéis e responsabilidades: BIM Manager, Coordinator, Author",title:"RACI de papéis BIM — exemplo BEP",type:"table",cols:["Papel","Responsabilidade principal","Ferramentas","Dedicação"],rows:[["BIM Manager (LAP)","Governança + gate decisions + BEP","Solibri + ACC","20%"],["BIM Coordinator","Federação + clash + BCF","Navisworks + BIMcollab","40%"],["BIM Author (ARC)","Modelagem ARQ + IFC + params","Revit 2024","100%"],["BIM Author (STR)","Modelagem estrutural + IFC","Revit Structure","100%"],["BIM Author (MEP)","Modelagem MEP + IFC + COBie","Revit MEP","100%"]]},
+    {item:"Matriz macro de responsabilidades (RACI)",title:"RACI macro — exemplo BEP §5.3.2",type:"table",cols:["Entregável","BIM Manager","BIM Coord.","BIM Author","Contratante"],rows:[["Modelo ARC G100","A","R","C","I"],["Modelo STR G100","A","R","C","I"],["Modelo HID G100","A","C","R","I"],["Modelo federado","A","R","C","I"],["Gate IDS","R","C","I","A"],["AIM final","A","R","C","R"]],note:"R=Responsável · A=Aprovador · C=Consultado · I=Informado"},
+  ],
+  ids:[
+    {item:"Regras de verificação automática por tipo IFC",title:"Regras IDS — exemplo (Sprinkler)",type:"table",cols:["Regra","Elemento IFC","Parâmetro","Tipo","Obrig."],rows:[["R1 — Identificação","IfcFireSuppressionTerminal","Name","IfcLabel","Sim"],["R2 — Fabricante","IfcFireSuppressionTerminal","Fabricante","IfcLabel","Sim"],["R3 — Vazão","IfcFireSuppressionTerminal","Flow_Rate","IfcReal","Sim"],["R4 — Pressão","IfcFireSuppressionTerminal","Pressure_Rating","IfcReal","Sim"],["R5 — WBS","IfcFireSuppressionTerminal","WBS_Code","IfcLabel","Sim"]],note:"O IDS não substitui o EIR — ele formaliza os critérios do EIR em regras computacionais verificáveis."},
+    {item:"Formato XML do IDS (buildingSMART)",title:"Estrutura IDS XML — exemplo",type:"code",code:`<ids:specification name="R1-Fabricante" applicability="required">\n  <ids:applicability>\n    <ids:entity>\n      <ids:name><ids:simpleValue>IFCFIRESUPPRESSIONTERMINAL</ids:name>\n    </ids:entity>\n  </ids:applicability>\n  <ids:requirements>\n    <ids:property>\n      <ids:propertySet><ids:simpleValue>Pset_ManufacturerTypeInformation\n      </ids:propertySet>\n      <ids:baseName><ids:simpleValue>Manufacturer</ids:baseName>\n    </ids:property>\n  </ids:requirements>\n</ids:specification>`},
+  ],
+  tidp:[
+    {item:"Programação de contêineres por task team com datas",title:"TIDP — Task Team HID — exemplo §5.4.4",type:"table",cols:["Contêiner","Fase","LOD","Data entrega LAP","Rev.","Status CDE"],rows:[["HOS-HIDRO-01-00-M3D-HID-0001.ifc","G100","300","M+5 sem.3","P01","S1 Shared"],["HOS-HIDRO-01-00-PDF-HID-0001.pdf","G100","—","M+5 sem.4","P01","S2 Published"],["HOS-HIDRO-01-00-M3D-HID-0002.ifc","G200","350","M+9 sem.2","P01","S1 Shared"]]},
+  ],
+  midp:[
+    {item:"Plano mestre consolidado de todas as disciplinas",title:"MIDP — exemplo §5.4.5",type:"table",cols:["Contêiner","Task Team","LOD","Data LAP","Gate","Status"],rows:[["Modelo ARC G100","ARC","300","M+5 sem.4","Gate 3","S2 Published"],["Modelo STR G100","STR","300","M+5 sem.3","Gate 3","S1 Shared"],["Modelo HID G100","HID","300","M+5 sem.3","Gate 3","S1 Shared"],["Modelo ELE G100","ELE","300","M+6 sem.1","Gate 3b","WIP"],["AIM federado","LAP","400","M+14","Gate 5","Planejado"]]},
+  ],
+  aim:[
+    {item:"Entregáveis do AIM por disciplina e formato",title:"Pacote AIM — exemplo §5.7",type:"table",cols:["Entregável","Formato","LOD","Valida contra","Destino"],rows:[["Modelo ARC as-built","IFC4","400","AIR §3.2","CDE → CAFM"],["Modelo STR as-built","IFC4","400","AIR §3.3","CDE"],["Modelo MEP as-built","IFC4","400","AIR §3.4","CDE → CMMS"],["COBie Component","XLSX","—","AIR §4.1","CMMS (Maximo)"],["Manuais técnicos","PDF/A","—","AIR §4.2","CDE → FM"]]},
+  ],
+  pir:[
+    {item:"Lições aprendidas para retroalimentação do OIR",title:"Registro de lições — exemplo §5.8.2",type:"table",cols:["Lição","Fase","Impacto","Recomendação"],rows:[["IDS definido em M+1 vs M+0 planejado","Mobilização","3 rejeições de gate evitáveis","IDS rascunho obrigatório no edital"],["Task Team ELE sem capacidade Revit MEP","Produção","Atraso 2 semanas G100","Avaliar capacidade ANTES de contratar"],["COBie n.série ausente em 23 componentes","Encerramento","Ressalva no aceite AIM","Cobrar n.série na NF de compra"]]},
+  ],
+  'p2-51-1':[
+    {item:"Responsáveis pela gestão da informação",title:"Designação de responsáveis — exemplo §5.1.1",type:"table",cols:["Função","Responsável","Competência requerida","Cert."],rows:[["Gestor da informação","BIM Manager organizacional","ISO 19650 + contratos BIM","ISO 19650 Practitioner"],["Avaliador técnico","Coord. Técnico","Leitura IFC + validação IDS","Autodesk ACC Professional"],["Admin CDE","TI","Gestão de permissões e workflows","ACC Admin"]]},
+  ],
+  'p2-rir':[
+    {item:"Requisitos de informação do projeto por PCD",title:"Requisitos por Ponto de Decisão — exemplo §5.1.2",type:"table",cols:["PCD","Questão","Informação necessária","Prazo"],rows:[["PCD-1 Viabilidade","Cabe no terreno?","Modelo volumétrico ARQ LOD 100","M+1"],["PCD-2 Licenciamento","Projeto legal aprovável?","IFC ARQ LOD 200 + memorial","M+4"],["PCD-3 Contratação obra","Executável ao preço?","IFC todos LOD 350 + QTO","M+10"],["PCD-4 Entrega ao FM","Ativo operável?","AIM LOD 400 + COBie","M+16"]]},
+  ],
+  'p2-marcas':[
+    {item:"Cronograma de marcos de entrega da informação",title:"Datas-marco — exemplo §5.1.3",type:"table",cols:["Marco","Entrega","Data","Gate"],rows:[["M1 — Mobilização","BEP definitivo + IDS","M+2","Gate 2"],["M2 — Coordenação","IFC G100 todas disciplinas","M+5","Gate 3"],["M3 — Clash","Relatório clash + BCF resolvidos","M+6","Gate 3b"],["M4 — Detalhamento","IFC G200 + quantitativos","M+9","Gate 4"],["M5 — As-built","IFC G300 + COBie completo","M+14","Gate 5"],["M6 — AIM","AIM validado + PIR concluído","M+16","Gate 6"]]},
+  ],
+  'p2-padroes':[
+    {item:"Classificação ABNT NBR ISO 12006-2 aplicada",title:"Padrões de classificação — exemplo §5.1.4",type:"table",cols:["Tabela","Escopo","Aplicação","Exemplos"],rows:[["Tabela 1 — Construção","Elementos construtivos","Nomenclatura de objetos IFC","Parede, Laje, Pilar"],["Tabela 2 — Espaço","Espaços / Zonas","IfcSpace — ambientes","Sala, Corredor, Shafts"],["Tabela 3 — Recurso","Materiais e produtos","Especificação técnica","Concreto fck 25, Aço CA-50"]]},
+  ],
+  'p2-cde':[
+    {item:"Estrutura e estados do CDE",title:"Configuração do CDE — exemplo §5.1.7",type:"code",code:`Plataforma: Autodoc (repositório) + Construflow (colaboração BCF)\n\nEstrutura de pastas:\n  /{PROJETO}/\n    /WIP/          → produção ativa (acesso restrito)\n    /Shared/       → revisão e coordenação\n    /Published/    → versão oficial aprovada\n    /Archived/     → versões anteriores\n\nPermissões mínimas:\n  BIM Author     → WIP: leitura+escrita / Shared: leitura\n  BIM Coordinator→ Shared: leitura+escrita\n  BIM Manager    → todos os ambientes\n  Contratante    → Published: leitura`},
+  ],
+  'p2-eir-licit':[
+    {item:"EIR compilado para o edital",title:"EIR — estrutura mínima para licitação §5.2.1",type:"table",cols:["Seção do EIR","Conteúdo mínimo","Referência"],rows:[["1. LoIN por fase","LOD + LOI por disciplina e fase","§5.1.2 + AIR"],["2. Softwares aceitos","Autoria + coordenação + CDE","§5.1.4"],["3. Nomenclatura","Padrão de arquivos e elementos","§5.1.4"],["4. Critérios de aceitação","Gates + IDS","§5.6.4"],["5. Cronograma de entregas","Milestones + PCDs","§5.1.3"]]},
+  ],
+  'p2-bep-pre':[
+    {item:"Estratégia de entrega e federação de modelos",title:"BEP pré-contratual — estratégia §5.3.2",type:"table",cols:["Modelo federado","Disciplinas","Frequência","Ferramenta","Responsável"],rows:[["Federado G100 — Coord.","ARC+STR+HID+ELE+MEC","Semanal","Navisworks 2024","BIM Coordinator"],["Federado G200 — Detalh.","ARC+STR+HID+ELE+MEC","Quinzenal","Navisworks 2024","BIM Coordinator"],["AIM federado final","Todos LOD 400","Entrega única","Solibri + IFC merge","BIM Manager"]]},
+    {item:"RACI macro do BEP pré-contratual",title:"RACI macro — exemplo §5.3.2",type:"table",cols:["Entregável","BIM Manager","BIM Coord.","BIM Author","Contratante"],rows:[["Modelo ARC G100","A","R","C","I"],["Modelo STR G100","A","R","C","I"],["Modelo federado","A","R","C","I"],["Gate IDS","R","C","I","A"],["Aprovação PCD","C","I","I","R"]],note:"R=Responsável · A=Aprovador · C=Consultado · I=Informado"},
+  ],
+  'p2-riscos':[
+    {item:"Registro de riscos de entrega de informação",title:"Registro de riscos — exemplo §5.3.6",type:"table",cols:["Risco","Prob.","Impacto","Nível","Mitigação"],rows:[["ELE sem capacidade Revit MEP","Alta","Alto","Crítico","Mentoria + prazo buffer 2 semanas"],["IDS definido após início produção","Média","Alto","Alto","IDS rascunho antes de M+1"],["Georef. incorreto descoberto tarde","Baixa","Alto","Médio","Validar Survey Point em M+1"],["Clash STR×HID em G100","Alta","Médio","Alto","Clash detection semanal automático"]]},
+  ],
+  'p2-bep-def':[
+    {item:"BEP definitivo — detalhamento pós-contrato",title:"BEP definitivo vs. pré-contratual — §5.4.1",type:"table",cols:["Item BEP-P","Status BEP-D","Alteração","Justificativa"],rows:[["Equipe de gestão","Confirmado","Nenhuma","Profissionais nominados mantidos"],["Estratégia de federação","Confirmado","Nenhuma","Testado em mobilização"],["RACI macro","Detalhado","RACI por entregável","Subcontratadas definidas"],["Task Team ELE — capacidade","Ajustado","Buffer +2 semanas G100","Diagnóstico mobilização"]],note:"O BEP definitivo não reinventa o pré-contratual — confirma e detalha."},
+    {item:"EIR das subcontratadas (cascade §5.4.3)",title:"EIR downstream — exemplo §5.4.3",type:"table",cols:["Subcontratada","Requisito","LoIN","Prazo à LAP","Critério aceite"],rows:[["STR Consultoria","IFC STR G100 shared params","LOD 300 + LOI médio","M+5 sem.3","IDS 0 blockers"],["HID Engenharia","IFC HID G100 + params FM","LOD 300 + LOI alto","M+5 sem.3","IDS 0 blockers + vazão"],["ELE Projetos","IFC ELE G100 com circuitos","LOD 300 + LOI médio","M+6 sem.1","IDS 0 blockers"],["MEC Climatização","IFC MEC G100 + BTU por zona","LOD 300 + LOI alto","M+5 sem.4","IDS 0 blockers"]]},
+  ],
+  'p2-tidp2':[
+    {item:"TIDP por task team com datas de entrega",title:"TIDP — Task Team HID — exemplo §5.4.4",type:"table",cols:["Contêiner","Fase","LOD","Data entrega LAP","Rev.","Status CDE alvo"],rows:[["HOS-HIDRO-01-00-M3D-HID-0001.ifc","G100","300","M+5 sem.3","P01","S1 Shared"],["HOS-HIDRO-01-00-PDF-HID-0001.pdf","G100","—","M+5 sem.4","P01","S2 Published"],["HOS-HIDRO-01-00-M3D-HID-0002.ifc","G200","350","M+9 sem.2","P01","S1 Shared"],["COBie-HID-G300.xlsx","G300","—","M+13 sem.3","P01","S2 Published"]]},
+  ],
+  'p2-midp2':[
+    {item:"MIDP consolidado de todas as task teams",title:"MIDP master — exemplo §5.4.5",type:"table",cols:["Contêiner","Task Team","LOD","Data LAP","Gate","Status"],rows:[["Modelo ARC G100","ARC","300","M+5 sem.4","Gate 3","S2 Published"],["Modelo STR G100","STR","300","M+5 sem.3","Gate 3","S1 Shared"],["Modelo HID G100","HID","300","M+5 sem.3","Gate 3","S1 Shared"],["Modelo ELE G100","ELE","300","M+6 sem.1","Gate 3b","WIP"],["AIM federado","LAP","400","M+14","Gate 5","Planejado"]]},
+  ],
+  'p2-mob2':[
+    {item:"Mobilização de recursos, TI e CDE",title:"Cronograma de mobilização — exemplo §5.5",type:"table",cols:["Semana","Atividade","Responsável","Entregável"],rows:[["M+0 sem.1","Contrato assinado — kick-off BIM","BIM Manager","Ata de reunião"],["M+0 sem.2","IDS finalizado e publicado no CDE","BIM Manager","IDS v1.0 XML"],["M+0 sem.3","Templates Revit distribuídos","BIM Coordinator","RTE + shared params"],["M+0 sem.4","Treinamento IDS equipes","BIM Manager","Certificado presença"],["M+1 sem.1","Testes de workflow CDE","BIM Manager","Relatório de testes"],["M+1 sem.2","Início da produção colaborativa","Todos","Modelos WIP ativos"]]},
+  ],
+  'p2-geninfo':[
+    {item:"Checklist QA antes de S1 Shared",title:"Checklist QA — exemplo §5.6.2",type:"code",code:`Checklist QA obrigatório (antes de mover para Shared):\n\n  1. Nomenclatura do arquivo    → PASS\n  2. Parâmetros vs. IDS v2.1   → 0 blockers\n  3. Coordenadas / Survey Point → origin OK\n  4. Schema IFC válido          → IfcOpenShell PASS\n  5. Geometria importável       → Navisworks: sem erros\n  6. Clashes auto (Navisworks)  → sem clash BLOCKER\n\n  RESULTADO: PASS → mover para S1 Shared\n             FAIL → corrigir e reexecutar`},
+  ],
+  'p2-revisao':[
+    {item:"Revisão pela contratada líder — autorização",title:"Revisão LAP do modelo — exemplo §5.6.5",type:"table",cols:["Verificação","Critério","Ferramenta","Resultado"],rows:[["Conformidade IDS","0 blockers em todas as regras","Workflow de validação","APROVADO"],["Clash detection federado","0 clashes BLOCKER","Navisworks","2 issues MAJOR abertas"],["Nomenclatura de contêineres","Padrão EIR §5.1.4","Script automatizado","APROVADO"],["Coordenadas georref.","Desvio ≤ 5cm horizontal","Survey Point","APROVADO"]]},
+  ],
+  'p2-entrega-mi':[
+    {item:"Submissão do modelo de informação para aceite",title:"Checklist de submissão AIM — exemplo §5.7",type:"table",cols:["Item","Verificação","Status","Evidência"],rows:[["Todos contêineres S2 Published","MIDP — todos LOD 400","OK","MIDP v3.2"],["Workflow de validação G300","0 blockers todas disciplinas","OK","Log do sistema"],["COBie Component completo","97% campos FM preenchidos","OK c/ressalva","23 n.série pendentes"],["AIM federado importável","Solibri sem erros de schema","OK","Relatório Solibri"]]},
+  ],
+  'p2-encerra':[
+    {item:"Arquivamento do PIM e lições aprendidas",title:"Procedimento de arquivamento — exemplo §5.8",type:"code",code:`Procedimento de arquivamento — §5.8.1\n\n1. Verificar que todos contêineres estão em S2 Published\n2. Criar snapshot imutável do CDE\n   └─ Hash SHA-256 do arquivo registrado\n3. Mover todos contêineres para S5 Archived no CDE\n   └─ Acesso mantido para consulta histórica (somente leitura)\n4. Reter no AIM operacional (não arquivar):\n   └─ IFC LOD 400 as-built (todas disciplinas)\n   └─ COBie completo importado no CMMS\n5. Notificar o FM sobre a transferência`},
+    {item:"Lições aprendidas para retroalimentação do OIR",title:"Registro de lições — exemplo §5.8.2",type:"table",cols:["Lição","Fase","Impacto","Recomendação"],rows:[["IDS definido em M+1 vs M+0","Mobilização","3 rejeições de gate","IDS rascunho obrigatório no edital"],["Task Team ELE sem capacidade","Produção","Atraso 2 semanas","Avaliar capacidade ANTES de contratar"],["COBie n.série ausente","Encerramento","Ressalva no AIM","Cobrar n.série na NF de compra"],["Georef. corrigido em M+2","Mobilização","Retrabalho 3 disciplinas","Validar Survey Point semana 1"]]},
+  ],
+};
+
 // ─── TAB: GUIA ISO 19650 ───────────────────────────────────────────────────────
 function TabGuia(){
   const[modalDoc,setModalDoc]=useState(null);
-  const DOCS=[{id:"oir",a:"OIR",c:"#1a4a7a",bg:"#dce8f5",n:"Organizational Information Requirements",norm:"ISO 19650-1 §5.3",desc:"Define as necessidades de informação da organização para todo o ciclo de vida dos ativos. Documento estratégico permanente — base para todos os projetos futuros."},{id:"air",a:"AIR",c:"#2d5a3d",bg:"#d8eddf",n:"Asset Information Requirements",norm:"ISO 19650-1 §5.3",desc:"Especifica quais informações sobre o ativo são necessárias para suportar decisões de operação e manutenção pós-entrega."},{id:"eir",a:"EIR",c:"#5a2d7a",bg:"#ecddf5",n:"Exchange Information Requirements",norm:"ISO 19650-2 §5.1",desc:"Define tudo que se espera receber: LOIN por fase, software, nomenclatura, CDE, formatos IFC e datas. Base contratual BIM."},{id:"bep",a:"BEP/PEB",c:"#7a4a1a",bg:"#f5e8d8",n:"BIM Execution Plan",norm:"ISO 19650-2 §5.2–5.3",desc:"Resposta da equipe ao EIR. Versão preliminar (proposta técnica §5.3.2) e definitiva (guia operacional §5.4.1)."},{id:"ids",a:"IDS",c:"#1a5a5a",bg:"#d8f0f0",n:"Information Delivery Specification",norm:"ISO 21597 / buildingSMART",desc:"Define parâmetros obrigatórios por tipo de elemento IFC. Alimenta verificação automática de conformidade."},{id:"tidp",a:"TIDP",c:"#7a1a4a",bg:"#f5d8e8",n:"Task Information Delivery Plan",norm:"ISO 19650-2 §5.4.4",desc:"Cronograma detalhado de entregas de uma disciplina. Elaborado por cada AP e consolidado no MIDP."},{id:"midp",a:"MIDP",c:"#4a1a7a",bg:"#e8d8f5",n:"Master Information Delivery Plan",norm:"ISO 19650-2 §5.4.5",desc:"Consolidação de todos os TIDPs. Sequência e dependências de todas as entregas. Mantido pelo LAP."},{id:"aim",a:"AIM",c:"#1a5a3d",bg:"#d8f0e8",n:"Asset Information Model",norm:"ISO 19650-1 §5.3",desc:"Modelo BIM final entregue ao contratante para operar e manter o ativo. Validado contra AIR original."},{id:"pir",a:"PIR",c:"#7a3d1a",bg:"#f5e0d8",n:"Post-Implementation Review",norm:"ISO 19650-2 §5.6",desc:"Avaliação formal ao final. Lições aprendidas retroalimentam o OIR para o próximo projeto."}];
-  const ISO2=[
-    {l:"§5.1 Necessidades",items:["GRI","RIR","DMI","PIP","MPI","REF","CDE","PRI"]},
-    {l:"§5.2 Licitação",items:["EIR"]},{l:"§5.3 Resposta",items:["BEP-P","CAP","CCT","PMO","RRC","RLC"]},
-    {l:"§5.4 Contratação",items:["BEP-D","MRD","EIS","TIDP","MIDP","DCO","DCS"]},
-    {l:"§5.5 Mobilização",items:["MOB"]},{l:"§5.6 Produção",items:["GEN","RMI"]},
-    {l:"§5.7 Entrega",items:["EMI"]},{l:"§5.8 Encerramento",items:["ENC"]},
+  const[exModal,setExModal]=useState(null); // {doc, example}
+  const[activeGuidePanel,setActiveGuidePanel]=useState("flows"); // flows | hierarchy | cde
+
+  const DOCS_FULL=[
+    {id:"oir",a:"OIR",c:"#1a4a7a",bg:"#dce8f5",n:"Organizational Information Requirements",norm:"ISO 19650-1 §5.3 / ISO 19650-3",phase:"pre-bep",owner:"Contratante",
+     purpose:"Define as necessidades de informação da organização para todo o ciclo de vida dos ativos. É o documento estratégico permanente — não pertence a nenhum projeto específico.",
+     fields:[{l:"Horizonte",v:"30–50 anos"},{l:"Escopo",v:"Organização inteira"},{l:"Revisão",v:"A cada projeto (PIR)"},{l:"Formato",v:"PDF + planilha"}],
+     feeds:["air","eir"],feedsBy:[]},
+    {id:"air",a:"AIR",c:"#2d5a3d",bg:"#d8eddf",n:"Asset Information Requirements",norm:"ISO 19650-1 §5.3 / ISO 19650-3",phase:"pre-bep",owner:"Contratante + FM",
+     purpose:"Especifica quais informações sobre o ativo são necessárias para suportar decisões de operação e manutenção pós-entrega. Ponte entre OIR e EIR.",
+     fields:[{l:"Horizonte",v:"Vida útil do ativo"},{l:"Escopo",v:"Ativo específico"},{l:"Destino",v:"CAFM / CMMS"},{l:"Saída",v:"IFC LOD400 + COBie"}],
+     feeds:["eir","aim"],feedsBy:["oir"]},
+    {id:"eir",a:"EIR",c:"#5a2d7a",bg:"#ecddf5",n:"Exchange Information Requirements",norm:"ISO 19650-2 §5.1",phase:"pre-bep",owner:"Contratante",
+     purpose:"Documento central do Pré-BEP. Define tudo que se espera receber das equipes: LOD por fase, software, nomenclatura, CDE, formatos IFC e datas. Base contratual BIM.",
+     fields:[{l:"Horizonte",v:"Duração do projeto"},{l:"Escopo",v:"Projeto específico"},{l:"Resposta",v:"BEP preliminar"},{l:"Gate",v:"Gate 0 — EIR aprovado"}],
+     feeds:["bep","ids"],feedsBy:["oir","air"]},
+    {id:"bep",a:"BEP/PEB",c:"#7a4a1a",bg:"#f5e8d8",n:"BIM Execution Plan",norm:"ISO 19650-2 §5.2–5.3",phase:"pre-contrato",owner:"Lead Appointed Party",
+     purpose:"Resposta formal da equipe contratada ao EIR. Versão preliminar (proposta técnica §5.3.2) e definitiva (guia operacional §5.4.1). Define como a equipe produz, coordena e entrega informação.",
+     bepLayers:[{l:"Camada 1 — Pré-contratual §5.3.2",v:"Proposta técnica: estratégia, RACI macro, federação, metas."},{l:"Camada 2 — Definitivo §5.4.1",v:"Guia operacional: RACI detalhada, IDS, EIR downstream, TIDP/MIDP."}],
+     fields:[{l:"Versão 1",v:"Preliminar — pré-contrato §5.3.2"},{l:"Versão 2",v:"Definitivo — pós-contrato §5.4.1"},{l:"Gate",v:"Gate 1 + Gate 2"},{l:"Responsável",v:"BIM Manager (LAP)"}],
+     feeds:["midp","ids"],feedsBy:["eir"]},
+    {id:"ids",a:"IDS",c:"#1a5a5a",bg:"#d8f0f0",n:"Information Delivery Specification",norm:"ISO 21597 / buildingSMART",phase:"mobilizacao",owner:"BIM Manager",
+     purpose:"Define com precisão quais parâmetros são obrigatórios em cada tipo de elemento IFC, em qual fase e com qual valor válido. Alimenta o fluxo automatizado de verificação de conformidade.",
+     idsNote:"O IDS é um instrumento de verificação, não de origem dos requisitos. A origem está no EIR → AIR → OIR.",
+     fields:[{l:"Formato",v:"XML (IDS schema)"},{l:"Deriva de",v:"EIR (critérios de aceitação)"},{l:"Gate",v:"Gate 2 — antes de produzir"},{l:"Regras",v:"R1–R5 por disciplina"}],
+     feeds:[],feedsBy:["eir","bep"]},
+    {id:"tidp",a:"TIDP",c:"#7a1a4a",bg:"#f5d8e8",n:"Task Information Delivery Plan",norm:"ISO 19650-2 §5.4.4",phase:"pre-contrato",owner:"Appointed Party (por disciplina)",
+     purpose:"Cronograma detalhado de todas as entregas de informação de uma disciplina específica. Cada AP elabora o seu TIDP, que é consolidado no MIDP pelo LAP.",
+     fields:[{l:"Escopo",v:"1 disciplina / 1 AP"},{l:"Colunas",v:"Doc, LOD, data, status"},{l:"Atualização",v:"A cada marco"},{l:"Consolida em",v:"MIDP"}],
+     feeds:["midp"],feedsBy:["bep","eir"]},
+    {id:"midp",a:"MIDP",c:"#4a1a7a",bg:"#e8d8f5",n:"Master Information Delivery Plan",norm:"ISO 19650-2 §5.4.5",phase:"producao",owner:"Lead Appointed Party",
+     purpose:"Consolidação de todos os TIDPs em um único documento de controle mestre. É o cronograma de todas as entregas BIM do projeto — mantido pelo LAP durante toda a execução.",
+     fields:[{l:"Escopo",v:"Todas as disciplinas"},{l:"Atualização",v:"A cada sprint/marco"},{l:"Status",v:"Planejado/Em prod./Entregue"},{l:"Responsável",v:"LAP — BIM Manager"}],
+     feeds:[],feedsBy:["tidp","bep"]},
+    {id:"aim",a:"AIM",c:"#1a5a3d",bg:"#d8f0e8",n:"Asset Information Model",norm:"ISO 19650-1 §5.3 / ISO 19650-3",phase:"encerramento",owner:"Contratante (FM)",
+     purpose:"Modelo BIM final entregue ao contratante para operar e manter o ativo. Validado contra o AIR original. É o produto final do processo ISO 19650.",
+     fields:[{l:"LOD",v:"400 (as-built)"},{l:"Valida contra",v:"AIR original"},{l:"Destino",v:"CAFM / CMMS / BMS"},{l:"Status CDE",v:"Published → operação"}],
+     feeds:[],feedsBy:["air","eir"]},
+    {id:"pir",a:"PIR",c:"#7a3d1a",bg:"#f5e0d8",n:"Post-Implementation Review",norm:"ISO 19650-2 §5.6",phase:"encerramento",owner:"LAP + Contratante",
+     purpose:"Avaliação formal do processo BIM ao final do projeto. O EIR foi atendido? As lições aprendidas retroalimentam o OIR para o próximo projeto.",
+     fields:[{l:"Quando",v:"Pós-entrega do AIM"},{l:"Participantes",v:"LAP + Contratante"},{l:"Saída",v:"Relatório + lições"},{l:"Retroalimenta",v:"OIR (próx. projeto)"}],
+     feeds:["oir"],feedsBy:["aim","midp"]},
   ];
+
+  const ISO2_FLOWS=[
+    {label:"§5.1 Necessidades",color:"#0c444e",bg:"#d4eff2",items:[
+      {id:"p2-51-1",a:"GRI",n:"Gestão da Informação — Responsáveis",norm:"§5.1.1"},
+      {id:"p2-rir",a:"RIR",n:"Requisitos de Informação do Projeto",norm:"§5.1.2"},
+      {id:"p2-marcas",a:"DMI",n:"Datas-Marco de Entrega",norm:"§5.1.3"},
+      {id:"p2-padroes",a:"PIP",n:"Padrões da Informação",norm:"§5.1.4"},
+      {id:"p2-51-5",a:"MPI",n:"Métodos e Procedimentos",norm:"§5.1.5"},
+      {id:"p2-cde",a:"CDE",n:"Ambiente Comum de Dados",norm:"§5.1.7"},
+    ]},
+    {label:"§5.2 Licitação",color:"#3b3500",bg:"#f5f0c0",items:[
+      {id:"p2-eir-licit",a:"EIR",n:"Requisitos de Troca p/ Licitação",norm:"§5.2.1"},
+    ]},
+    {label:"§5.3 Resposta",color:"#3b1a00",bg:"#f5dcc0",items:[
+      {id:"p2-bep-pre",a:"BEP-P",n:"BEP Pré-Contratual",norm:"§5.3.2"},
+      {id:"p2-riscos",a:"RRC",n:"Registro de Riscos da Informação",norm:"§5.3.6"},
+    ]},
+    {label:"§5.4 Contratação",color:"#1a003b",bg:"#e0d4f5",items:[
+      {id:"p2-bep-def",a:"BEP-D",n:"BEP Definitivo Pós-Contrato",norm:"§5.4.1"},
+      {id:"p2-tidp2",a:"TIDP",n:"Planos de Entrega de Tarefas",norm:"§5.4.4"},
+      {id:"p2-midp2",a:"MIDP",n:"Plano Mestre de Entrega",norm:"§5.4.5"},
+    ]},
+    {label:"§5.5 Mobilização",color:"#003b1a",bg:"#c8f0dc",items:[
+      {id:"p2-mob2",a:"MOB",n:"Mobilização de Recursos e TI",norm:"§5.5"},
+    ]},
+    {label:"§5.6 Produção",color:"#3b001a",bg:"#f5c8d8",items:[
+      {id:"p2-geninfo",a:"GEN",n:"Geração da Informação",norm:"§5.6.2"},
+      {id:"p2-revisao",a:"RMI",n:"Revisão do Modelo de Informação",norm:"§5.6.5"},
+    ]},
+    {label:"§5.7 Entrega",color:"#001a3b",bg:"#c0d8f5",items:[
+      {id:"p2-entrega-mi",a:"EMI",n:"Entrega do Modelo de Informação",norm:"§5.7"},
+    ]},
+    {label:"§5.8 Encerramento",color:"#1a1a00",bg:"#f0f0c0",items:[
+      {id:"p2-encerra",a:"ENC",n:"Encerramento e Lições Aprendidas",norm:"§5.8"},
+    ]},
+  ];
+
+  // Build a lookup for all clickable items
+  const ISO2_DOC_META = {
+    "p2-51-1":{a:"GRI",c:"#0c444e",bg:"#d4eff2",n:"Gestão da Informação — Responsáveis",norm:"ABNT NBR ISO 19650-2 §5.1.1",purpose:"A contratante deve indicar indivíduos em sua organização para assumir as atribuições e funções de gestão da informação, ou delegar a uma contratada/terceiro com escopo definido.",owner:"Contratante",fields:[{l:"Quem nomeia",v:"Contratante"},{l:"Alternativa",v:"Delegar a contratada/terceiro"},{l:"Escopo",v:"Definido em contrato"},{l:"Quando",v:"Antes de qualquer processo"}]},
+    "p2-rir":{a:"RIR",c:"#0c444e",bg:"#d4eff2",n:"Requisitos de Informação do Projeto",norm:"ABNT NBR ISO 19650-2 §5.1.2",purpose:"A contratante define as questões que precisa responder em cada ponto-chave de decisão do empreendimento. Estabelece o escopo informacional antes de qualquer convite à licitação.",owner:"Contratante",fields:[{l:"Quem elabora",v:"Contratante"},{l:"Quando",v:"Antes do edital"},{l:"Derivado de",v:"OIR + AIR + PIR"},{l:"Gate",v:"§5.1 — CDE pronto"}]},
+    "p2-marcas":{a:"DMI",c:"#0c444e",bg:"#d4eff2",n:"Datas-Marco de Entrega da Informação",norm:"ABNT NBR ISO 19650-2 §5.1.3",purpose:"A contratante define os marcos de entrega alinhados ao plano de trabalho do empreendimento, incluindo pontos-chave de decisão e prazos para revisão e aceite da informação.",owner:"Contratante",fields:[{l:"Quem elabora",v:"Contratante"},{l:"Alinhado a",v:"Plano de trabalho"},{l:"Inclui",v:"Tempo revisão + aceite"},{l:"Gate",v:"Antes do edital"}]},
+    "p2-padroes":{a:"PIP",c:"#0c444e",bg:"#d4eff2",n:"Padrões da Informação do Projeto",norm:"ABNT NBR ISO 19650-2 §5.1.4",purpose:"Normas e padrões específicos de informação: classificação (ABNT NBR ISO 12006-2), método de atribuição de LoIN, estrutura de contêineres e convenção de nomenclatura.",owner:"Contratante",fields:[{l:"Inclui",v:"Classificação + nomenclatura"},{l:"Referência",v:"ABNT NBR ISO 12006-2"},{l:"LoIN",v:"Nível de informação necessário"},{l:"Uso",v:"Durante + após a obra"}]},
+    "p2-51-5":{a:"MPI",c:"#0c444e",bg:"#d4eff2",n:"Métodos e Procedimentos de Produção",norm:"ABNT NBR ISO 19650-2 §5.1.5",purpose:"A contratante estabelece os métodos e procedimentos específicos de produção da informação: captura de ativos existentes, criação/revisão/aprovação de informação nova, método de LoIN e entrega à contratante.",owner:"Contratante",fields:[{l:"Inclui",v:"Captura + criação + revisão"},{l:"LoIN",v:"Método de atribuição"},{l:"Entrega",v:"Procedimento à contratante"},{l:"Referência",v:"§5.1.4 padrões do projeto"}]},
+    "p2-cde":{a:"CDE",c:"#0c444e",bg:"#d4eff2",n:"Ambiente Comum de Dados do Projeto",norm:"ABNT NBR ISO 19650-2 §5.1.7",purpose:"A contratante implementa e configura o CDE antes do convite à licitação. Cada contêiner de informação deve ter identificador único, estado e controle de acesso.",owner:"Contratante",fields:[{l:"Estados",v:"WIP → Shared → Published → Archived"},{l:"Atributos",v:"Estado, revisão, classificação"},{l:"Acesso",v:"Controlado por contêiner"},{l:"Quando",v:"Antes do edital — obrigatório"}]},
+    "p2-eir-licit":{a:"EIR",c:"#3b3500",bg:"#f5f0c0",n:"Requisitos de Troca (EIR p/ licitação)",norm:"ABNT NBR ISO 19650-2 §5.2.1",purpose:"A contratante compila o EIR para o edital: requisitos de troca, nível de informação necessário (LoIN), critérios de aceitação, informações de suporte e datas por requisito.",owner:"Contratante",fields:[{l:"Contém",v:"LoIN por requisito"},{l:"Inclui",v:"Critérios de aceitação"},{l:"Referências",v:"Normas + exemplares similares"},{l:"Publicado em",v:"CDE do projeto"}]},
+    "p2-bep-pre":{a:"BEP-P",c:"#3b1a00",bg:"#f5dcc0",n:"BEP Pré-Contratual",norm:"ABNT NBR ISO 19650-2 §5.3.2",purpose:"Resposta da equipe licitante ao EIR. Contém: nomes dos responsáveis por gestão da informação, estratégia de entrega, federação, matriz macro de responsabilidades e objetivos BIM.",owner:"Potencial contratada líder",fields:[{l:"Fase",v:"Resposta à licitação"},{l:"Contém",v:"Estratégia + RACI macro + metas"},{l:"Federação",v:"Estratégia de modelos federados"},{l:"Gate",v:"Avaliação pré-contrato"}]},
+    "p2-riscos":{a:"RRC",c:"#3b1a00",bg:"#f5dcc0",n:"Registro de Riscos da Informação",norm:"ABNT NBR ISO 19650-2 §5.3.6",purpose:"A equipe licitante avalia os riscos de entrega de informação e estabelece o registro de riscos, incluindo riscos de competência das equipes de tarefa e estratégias de mitigação.",owner:"Potencial contratada líder",fields:[{l:"Avalia",v:"Competência das task teams"},{l:"Inclui",v:"Riscos de entrega"},{l:"Mitigação",v:"Plano de mobilização"},{l:"Gate",v:"Submetido com BEP-P"}]},
+    "p2-bep-def":{a:"BEP-D",c:"#1a003b",bg:"#e0d4f5",n:"BEP Definitivo Pós-Contrato",norm:"ABNT NBR ISO 19650-2 §5.4.1",purpose:"Confirmação e detalhamento do BEP pré-contratual após assinatura do contrato. Incorpora a matriz detalhada de responsabilidades e os requisitos de troca das subcontratadas.",owner:"Contratada líder (LAP)",fields:[{l:"Fase",v:"Contratação"},{l:"Detalha",v:"BEP pré-contratual"},{l:"Inclui",v:"RACI detalhada + EIR subcontratadas"},{l:"Gate",v:"Antes da mobilização"}]},
+    "p2-tidp2":{a:"TIDP",c:"#1a003b",bg:"#e0d4f5",n:"Planos de Entrega de Tarefas",norm:"ABNT NBR ISO 19650-2 §5.4.4",purpose:"Cada equipe de tarefa elabora seu TIDP: programação dos contêineres de informação com datas de entrega. A contratada líder revisa e consolida no MIDP.",owner:"Equipes de tarefa",fields:[{l:"Por equipe",v:"1 TIDP por task team"},{l:"Contém",v:"Contêineres + datas + revisões"},{l:"Consolida em",v:"MIDP"},{l:"Responsável",v:"Cada subcontratada"}]},
+    "p2-midp2":{a:"MIDP",c:"#1a003b",bg:"#e0d4f5",n:"Plano Mestre de Entrega da Informação",norm:"ABNT NBR ISO 19650-2 §5.4.5",purpose:"Incorpora todos os TIDPs relevantes. Define a sequência e dependência de todas as entregas do empreendimento. Referência master durante toda a produção colaborativa.",owner:"Contratada líder (LAP)",fields:[{l:"Consolida",v:"Todos os TIDPs"},{l:"Responsável",v:"Contratada líder (LAP)"},{l:"Atualização",v:"A cada entrega / marco"},{l:"Gate",v:"Aprovado antes da mobilização"}]},
+    "p2-mob2":{a:"MOB",c:"#003b1a",bg:"#c8f0dc",n:"Mobilização de Recursos e TI",norm:"ABNT NBR ISO 19650-2 §5.5",purpose:"A contratada executa o plano de mobilização: configuração do CDE, testes de workflow, distribuição de templates, treinamentos — antes do início da produção colaborativa.",owner:"Contratada líder",fields:[{l:"Inclui",v:"CDE + TI + templates + testes"},{l:"Gate",v:"Antes de produzir"},{l:"Duração típica",v:"2–4 semanas"},{l:"Entregável",v:"Relatório de mobilização"}]},
+    "p2-geninfo":{a:"GEN",c:"#3b001a",bg:"#f5c8d8",n:"Geração da Informação",norm:"ABNT NBR ISO 19650-2 §5.6.2",purpose:"As equipes de tarefa geram a informação conforme o TIDP, passando pelas etapas: produção (WIP), checklist QA, compartilhamento (S1 Shared) e publicação (S2 Published).",owner:"Task Teams",fields:[{l:"Etapas",v:"WIP → QA → S1 → S2"},{l:"QA",v:"IDS + clash + nomenclatura"},{l:"Gate",v:"0 blockers IDS"},{l:"Frequência",v:"Conforme TIDP"}]},
+    "p2-revisao":{a:"RMI",c:"#3b001a",bg:"#f5c8d8",n:"Revisão do Modelo de Informação",norm:"ABNT NBR ISO 19650-2 §5.6.5",purpose:"A contratada líder revisa e autoriza o modelo de informação antes de submeter à contratante. A contratante revisa e decide sobre aceite ou devolução.",owner:"LAP + Contratante",fields:[{l:"Quem revisa 1",v:"BIM Manager LAP"},{l:"Quem revisa 2",v:"Gestor da informação"},{l:"Gate",v:"Aprovado → Published"},{l:"Devolvido",v:"BCF com issues abertas"}]},
+    "p2-entrega-mi":{a:"EMI",c:"#001a3b",bg:"#c0d8f5",n:"Entrega do Modelo de Informação",norm:"ABNT NBR ISO 19650-2 §5.7",purpose:"A contratada líder submete o modelo de informação para autorização e aceite da contratante. Inclui checklist completo, relatório de validação e confirmação de conformidade com o EIR.",owner:"LAP + Contratante",fields:[{l:"Inclui",v:"Checklist + log validação + AIM"},{l:"Prazo revisão",v:"10 dias úteis"},{l:"Critério aceite",v:"100% EIR atendido"},{l:"Resultado",v:"Aceite formal ou devolução"}]},
+    "p2-encerra":{a:"ENC",c:"#1a1a00",bg:"#f0f0c0",n:"Encerramento e Lições Aprendidas",norm:"ABNT NBR ISO 19650-2 §5.8",purpose:"Arquivamento do PIM (S5 Archived), captura de lições aprendidas e retroalimentação ao OIR organizacional para os próximos projetos.",owner:"LAP + Contratante",fields:[{l:"PIM",v:"Arquivado (S5)"},{l:"AIM",v:"Transferido ao FM"},{l:"Lições",v:"Registradas e enviadas ao OIR"},{l:"Duração",v:"2–4 semanas pós-aceite"}]},
+  };
+
+  const openDoc = (d) => setModalDoc(d);
+  const openIso2Doc = (id) => {
+    const meta = ISO2_DOC_META[id];
+    if(meta) setModalDoc({...meta, id, examples: ISO_EXAMPLES[id]||[]});
+  };
+
+  const renderExampleContent = (ex) => {
+    if(ex.type==="table") return (
+      <div style={{overflowX:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+          <thead><tr>{ex.cols.map(c=><th key={c} style={{textAlign:"left",padding:"5px 8px",background:"#0d2a1f",color:"#a8e4cc",fontSize:8.5,textTransform:"uppercase",letterSpacing:"0.08em",fontFamily:"monospace",borderBottom:"1px solid #2a4a3a"}}>{c}</th>)}</tr></thead>
+          <tbody>{ex.rows.map((row,ri)=><tr key={ri}>{row.map((cell,ci)=><td key={ci} style={{padding:"5px 8px",borderBottom:"1px solid #e8f0ec",fontSize:11,color:"#2a3a30",lineHeight:1.4}}>{cell}</td>)}</tr>)}</tbody>
+        </table>
+        {ex.note&&<div style={{fontSize:10,color:"#6a7a70",background:"#f0f7f3",borderRadius:4,padding:"7px 10px",marginTop:7,lineHeight:1.6,borderLeft:"3px solid #d4ede3"}}>{ex.note}</div>}
+      </div>
+    );
+    if(ex.type==="code") return <pre style={{background:"#0f1117",border:"1px solid rgba(255,255,255,.08)",borderRadius:6,padding:"12px 14px",fontFamily:"monospace",fontSize:11,lineHeight:1.85,color:"#c8d3f5",whiteSpace:"pre-wrap",wordBreak:"break-word",overflowX:"auto"}}>{ex.code}</pre>;
+    return null;
+  };
+
   return(<div>
     <SecTitle num="REF" title="Guia ISO 19650 — Referência Normativa" sub="ABNT NBR ISO 19650-1:2021 · ISO 19650-2:2022 · Preservado como referência permanente"/>
-    <div style={{...S.callout("green"),fontSize:11}}>Material de apoio ao estudo e discussão — não substitui as normas aplicáveis ao contexto.</div>
+    <div style={{...S.callout("green"),fontSize:11}}>Material de apoio ao estudo e discussão — não substitui as normas aplicáveis ao contexto. Clique em qualquer card ou pill para ver detalhes e exemplos práticos.</div>
+
+    {/* ── CADEIA OIR → PIR ── */}
     <div style={S.card}>
-      <div style={S.cardTitle}>Cadeia de Requisitos — Clique para detalhes</div>
+      <div style={S.cardTitle}>Cadeia de Requisitos — ISO 19650-1 — Clique para detalhes e exemplos</div>
       <div style={{overflowX:"auto",paddingBottom:8}}>
-        <div style={{display:"flex",alignItems:"center",gap:4,minWidth:700,flexWrap:"nowrap"}}>
-          {DOCS.map((d,i)=>(
+        <div style={{display:"flex",alignItems:"center",gap:4,minWidth:750,flexWrap:"nowrap"}}>
+          {DOCS_FULL.map((d,i)=>(
             <div key={d.id} style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
-              <div onClick={()=>setModalDoc(d)} style={{background:d.bg,border:`1px solid ${d.c}44`,borderRadius:5,padding:"6px 10px",cursor:"pointer",minWidth:70,textAlign:"center"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";}}>
-                <div style={{fontSize:12,fontWeight:700,color:d.c,fontFamily:"monospace"}}>{d.a}</div>
-                <div style={{fontSize:8,color:d.c+"99",marginTop:2,lineHeight:1.3}}>{d.n.split(" ").slice(0,2).join(" ")}</div>
+              <div onClick={()=>openDoc({...d,examples:ISO_EXAMPLES[d.id]||[]})}
+                style={{background:d.bg,border:`1px solid ${d.c}44`,borderRadius:6,padding:"8px 11px",cursor:"pointer",minWidth:78,textAlign:"center",transition:"all .15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="0 6px 16px rgba(0,0,0,.2)";}}
+                onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>
+                <div style={{fontSize:13,fontWeight:700,color:d.c,fontFamily:"monospace"}}>{d.a}</div>
+                <div style={{fontSize:8,color:d.c+"99",marginTop:3,lineHeight:1.3}}>{d.n.split(" ").slice(0,2).join(" ")}</div>
+                {(ISO_EXAMPLES[d.id]||[]).length>0&&<div style={{fontSize:7.5,color:d.c+"bb",marginTop:3,fontFamily:"monospace"}}>{(ISO_EXAMPLES[d.id]||[]).length} exemplos →</div>}
               </div>
-              {i<DOCS.length-1&&<span style={{color:"#4a5568",fontSize:12}}>→</span>}
+              {i<DOCS_FULL.length-1&&<span style={{color:"#4a5568",fontSize:13,flexShrink:0}}>→</span>}
             </div>
           ))}
         </div>
       </div>
+      <div style={{fontSize:9,color:C.text3,fontFamily:"monospace",marginTop:4}}>Necessidade → Requisito → Plano → Produção → Entrega → Avaliação</div>
     </div>
+
+    {/* ── ISO 19650-2 FLUXO ── */}
     <div style={S.card}>
-      <div style={S.cardTitle}>ISO 19650-2 — §5.1 a §5.8</div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:7}}>
-        {ISO2.map(g=>(
-          <div key={g.l} style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:4,padding:9}}>
-            <div style={{fontSize:8.5,color:C.accentLight,fontFamily:"monospace",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6,fontWeight:700}}>{g.l}</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:3}}>{g.items.map(it=><span key={it} style={{...S.badge("green"),fontSize:8.5}}>{it}</span>)}</div>
+      <div style={S.cardTitle}>ISO 19650-2:2022 — §5.1 a §5.8 — Clique em qualquer processo</div>
+      {ISO2_FLOWS.map(grp=>(
+        <div key={grp.label} style={{marginBottom:10}}>
+          <div style={{fontSize:8.5,color:grp.color,fontFamily:"monospace",letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,background:grp.bg,padding:"4px 8px",borderRadius:3,display:"inline-block",marginBottom:6,border:`1px solid ${grp.color}33`}}>{grp.label}</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+            {grp.items.map(it=>(
+              <div key={it.id} onClick={()=>openIso2Doc(it.id)}
+                style={{background:grp.bg,border:`1px solid ${grp.color}44`,borderRadius:5,padding:"6px 10px",cursor:"pointer",minWidth:80,textAlign:"center",transition:"all .15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 4px 12px rgba(0,0,0,.2)";}}
+                onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>
+                <div style={{fontSize:11.5,fontWeight:700,color:grp.color,fontFamily:"monospace"}}>{it.a}</div>
+                <div style={{fontSize:8,color:grp.color+"99",marginTop:2,lineHeight:1.3,maxWidth:90}}>{it.norm}</div>
+                {(ISO_EXAMPLES[it.id]||[]).length>0&&<div style={{fontSize:7.5,color:grp.color+"bb",marginTop:2,fontFamily:"monospace"}}>{(ISO_EXAMPLES[it.id]||[]).length} ex.</div>}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
+
+    {/* ── HIERARQUIA + CDE ── */}
     <div style={S.g2}>
       <div style={S.card}>
         <div style={S.cardTitle}>Estados CDE — §5.1.7</div>
-        {[["S0 – WIP","Produção ativa, acesso restrito","gray"],["S1 – Shared","Revisão e coordenação","gold"],["S2 – Published","Gate aprovado, versão oficial","green"],["S5 – Archived","Histórico, somente leitura","blue"]].map(([e,d,c])=>(
-          <div key={e} style={{...S.badge(c),display:"flex",alignItems:"flex-start",gap:8,padding:"8px 10px",marginBottom:6,borderRadius:4,fontSize:11,width:"100%",fontWeight:400}}>
-            <strong style={{fontFamily:"monospace",fontWeight:700,flexShrink:0,fontSize:10.5}}>{e}</strong> — {d}
+        {[["S0 – WIP","Produção ativa. Acesso restrito ao autor e BIM Manager.","gray"],["S1 – Shared","Compartilhado para revisão e coordenação interdisciplinar.","gold"],["S2 – Published","Gate aprovado. Versão oficial. Zero blockers IDS.","green"],["S5 – Archived","Versão superada. Apenas consulta histórica.","blue"]].map(([e,d,c])=>(
+          <div key={e} style={{display:"flex",gap:8,padding:"8px 10px",marginBottom:5,borderRadius:4,background:C.bg3,border:`1px solid ${C.border}`}}>
+            <div style={S.badge(c)}>{e}</div>
+            <span style={{fontSize:10.5,color:C.text2,lineHeight:1.5,alignSelf:"center"}}>{d}</span>
           </div>
         ))}
       </div>
       <div style={S.card}>
         <div style={S.cardTitle}>Hierarquia de Requisitos</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-          {[["OIR","Org. Information Req.","#dce8f5","#1a4a7a"],["PIR","Project Information Req.","#dce8f5","#1a4a7a"],["AIR","Asset Information Req.","#d8eddf","#2d5a3d"],["EIR","Exchange Info. Req.","#ecddf5","#5a2d7a"],["AIM","Asset Info. Model","#d8f0e8","#1a5a3d"],["PIM","Project Info. Model","#e8d8f5","#4a1a7a"]].map(([a,d,bg,fg])=>(
-            <div key={a} style={{background:bg,border:`1px solid ${fg}33`,borderRadius:3,padding:"7px 9px"}}><div style={{fontFamily:"monospace",fontWeight:700,color:fg,fontSize:11}}>{a}</div><div style={{fontSize:9.5,color:fg+"99",marginTop:2,lineHeight:1.4}}>{d}</div></div>
+          {[["OIR","Org. Information Req.","#dce8f5","#1a4a7a"],["PIR","Project Info. Req.","#dce8f5","#1a4a7a"],["AIR","Asset Information Req.","#d8eddf","#2d5a3d"],["EIR","Exchange Info. Req.","#ecddf5","#5a2d7a"],["AIM","Asset Info. Model","#d8f0e8","#1a5a3d"],["PIM","Project Info. Model","#e8d8f5","#4a1a7a"]].map(([a,d,bg,fg])=>(
+            <div key={a} style={{background:bg,border:`1px solid ${fg}33`,borderRadius:3,padding:"7px 9px"}}><div style={{fontFamily:"monospace",fontWeight:700,color:fg,fontSize:11}}>{a}</div><div style={{fontSize:9.5,color:fg+"aa",marginTop:2,lineHeight:1.4}}>{d}</div></div>
           ))}
         </div>
       </div>
     </div>
-    {modalDoc&&<Modal onClose={()=>setModalDoc(null)}><div style={{padding:20,maxWidth:460}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}><div><div style={{fontFamily:"monospace",fontSize:20,fontWeight:700,color:modalDoc.c}}>{modalDoc.a}</div><div style={{fontSize:12,color:C.text,fontWeight:400,marginTop:3}}>{modalDoc.n}</div><div style={{fontSize:10,color:C.text3,fontFamily:"monospace",marginTop:2}}>{modalDoc.norm}</div></div><button style={{background:"transparent",border:`1px solid ${C.border}`,borderRadius:"50%",width:26,height:26,cursor:"pointer",color:C.text2,fontSize:13}} onClick={()=>setModalDoc(null)}>✕</button></div><div style={{background:modalDoc.bg,borderRadius:5,padding:"10px 14px",fontSize:12,color:"#2a2a2a",lineHeight:1.75}}>{modalDoc.desc}</div></div></Modal>}
+
+    <div style={{...S.callout("gold"),fontSize:11}}>
+      <strong style={{fontSize:9.5,fontFamily:"monospace",display:"block",marginBottom:3}}>Referências Normativas</strong>
+      ABNT NBR ISO 19650-1:2021 · ABNT NBR ISO 19650-2:2022 · ABNT NBR ISO 12006-2 · ISO 21597 (IDS/buildingSMART) · ABNT NBR 15965-5 (Classificação)
+    </div>
+
+    {/* ── MODAL DOCUMENTO ── */}
+    {modalDoc&&(
+      <Modal onClose={()=>setModalDoc(null)}>
+        <div style={{padding:22,width:"min(600px,90vw)",maxHeight:"82vh",overflowY:"auto"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
+            <div>
+              <div style={{fontFamily:"monospace",fontSize:22,fontWeight:700,color:modalDoc.c||modalDoc.color}}>{modalDoc.a||modalDoc.acronym}</div>
+              <div style={{fontSize:13,color:C.text,fontWeight:400,marginTop:3,fontFamily:"'Playfair Display',Georgia,serif"}}>{modalDoc.n||modalDoc.name}</div>
+              <div style={{fontSize:9.5,color:C.text3,fontFamily:"monospace",marginTop:3}}>{modalDoc.norm}</div>
+              {modalDoc.owner&&<div style={{fontSize:9.5,color:C.text3,marginTop:2}}>Responsável: <strong style={{color:C.text2}}>{modalDoc.owner}</strong></div>}
+            </div>
+            <button style={{background:"transparent",border:`1px solid ${C.border}`,borderRadius:"50%",width:28,height:28,cursor:"pointer",color:C.text2,fontSize:14,flexShrink:0}} onClick={()=>setModalDoc(null)}>✕</button>
+          </div>
+
+          {/* Propósito */}
+          <div style={{background:modalDoc.bg||"#f0f7f3",borderRadius:5,padding:"10px 14px",fontSize:12.5,color:"#1a2a22",lineHeight:1.8,marginBottom:12}}>
+            {modalDoc.purpose}
+          </div>
+
+          {/* BEP layers */}
+          {modalDoc.bepLayers&&(
+            <div style={{marginBottom:12}}>
+              {modalDoc.bepLayers.map((l,i)=>(
+                <div key={i} style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:4,padding:"8px 11px",marginBottom:5}}>
+                  <div style={{fontSize:9,color:C.text3,fontFamily:"monospace",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:3}}>{l.l}</div>
+                  <div style={{fontSize:11.5,color:C.text2}}>{l.v}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* IDS note */}
+          {modalDoc.idsNote&&<div style={{background:"#d8f0f0",border:"1px solid #1a5a5a33",borderRadius:4,padding:"8px 12px",fontSize:11,color:"#1a5a5a",marginBottom:12,lineHeight:1.6}}>{modalDoc.idsNote}</div>}
+
+          {/* Fields */}
+          {modalDoc.fields&&(
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:12}}>
+              {modalDoc.fields.map((f,i)=>(
+                <div key={i} style={{background:C.bg3,borderRadius:4,padding:"7px 9px"}}>
+                  <div style={{fontSize:9,color:C.text3,fontFamily:"monospace",marginBottom:2}}>{f.l}</div>
+                  <div style={{fontSize:11.5,color:C.text,fontFamily:"monospace"}}>{f.v}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Examples */}
+          {(modalDoc.examples||[]).length>0&&(
+            <div>
+              <div style={{fontSize:9,color:C.accentLight,fontFamily:"monospace",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8,fontWeight:600}}>Exemplos Práticos</div>
+              {(modalDoc.examples||[]).map((ex,ei)=>(
+                <div key={ei} style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:5,marginBottom:8,overflow:"hidden"}}>
+                  <button onClick={()=>setExModal(exModal===`${modalDoc.id}_${ei}`?null:`${modalDoc.id}_${ei}`)}
+                    style={{width:"100%",textAlign:"left",padding:"9px 12px",background:"transparent",border:"none",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <span style={{fontSize:11.5,color:C.text2,fontWeight:500}}>{ex.item}</span>
+                    <span style={{fontSize:10,color:C.accentLight,fontFamily:"monospace"}}>{exModal===`${modalDoc.id}_${ei}`?"▲":"▼"}</span>
+                  </button>
+                  {exModal===`${modalDoc.id}_${ei}`&&(
+                    <div style={{padding:"0 12px 12px",borderTop:`1px solid ${C.border}`}}>
+                      <div style={{fontSize:9,color:C.accentLight,fontFamily:"monospace",letterSpacing:"0.08em",textTransform:"uppercase",margin:"9px 0 7px"}}>{ex.title}</div>
+                      {renderExampleContent(ex)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Modal>
+    )}
   </div>);
 }
