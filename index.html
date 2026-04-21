@@ -1,3 +1,11 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+
+// ─── STORAGE ─────────────────────────────────────────────────────────────────
+async function saveData(key, val) { try { await window.storage.set(key, JSON.stringify(val)); } catch(e) {} }
+async function loadData(key) { try { const r = await window.storage.get(key); return r ? JSON.parse(r.value) : null; } catch(e) { return null; } }
+
+// Conteúdo original do guia_iso.html (injetado via Blob → iframe)
+const GUIA_HTML = `
 
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -242,6 +250,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .footer-bar{border-top:1px solid var(--border);padding:10px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .footer-note{font-size:10px;color:var(--ink3);font-family:var(--mono);line-height:1.6}
 .footer-cta{font-size:11px;color:var(--ink2);font-style:italic;font-family:var(--serif)}
+.linkedin-btn{display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:var(--r-sm);background:#0a66c2;color:#fff;font-size:11px;font-weight:600;font-family:var(--sans);text-decoration:none;border:none;cursor:pointer;transition:all var(--t-base);letter-spacing:.01em;box-shadow:0 2px 8px rgba(10,102,194,.30)}
+.linkedin-btn:hover{background:#0856a8;transform:translateY(-1px);box-shadow:0 4px 14px rgba(10,102,194,.40)}
+.linkedin-btn svg{flex-shrink:0}
 
 
 </style>
@@ -253,10 +264,16 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
     <h1>ISO 19650 <em>&</em> IDM — governança da informação</h1>
     <p>Guia visual interpretativo para apoio ao estudo da ISO 19650, com exemplos aplicados · Kanban · Gantt · Clique em qualquer item para ver exemplos</p>
   </div>
-  <div class="view-tabs" style="align-items:center">
-    <button class="vtab active" onclick="setView('kanban',this)">Kanban</button>
-    <button class="vtab" onclick="setView('gantt',this)">Gantt</button>
-    <button class="guide-btn" id="guide-toggle" onclick="toggleGuide(this)" title="Fluxos normativos e diagramas da norma">?</button>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div class="view-tabs" style="align-items:center">
+      <button class="vtab active" onclick="setView('kanban',this)">Kanban</button>
+      <button class="vtab" onclick="setView('gantt',this)">Gantt</button>
+      <button class="guide-btn" id="guide-toggle" onclick="toggleGuide(this)" title="Fluxos normativos e diagramas da norma">?</button>
+    </div>
+    <a class="linkedin-btn" href="https://www.linkedin.com/in/leonardo-barbosa-85a20b135/" target="_blank" rel="noopener noreferrer">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+      Leonardo Barbosa
+    </a>
   </div>
 </div>
 
@@ -642,7 +659,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 <div class="legend" id="legend"></div>
 <div class="footer-bar">
   <span class="footer-note">Os itens representam relações conceituais entre documentos e entregáveis · Exemplos têm caráter ilustrativo · Expressões como "deve" e "obrigatório" nos exemplos referem-se ao cenário descrito, não à norma universal</span>
-  <span class="footer-cta">Artefato de apoio ao estudo e discussão técnica da governança da informação.</span>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span class="footer-cta">Artefato de apoio ao estudo e discussão técnica da governança da informação.</span>
+    <a class="linkedin-btn" href="https://www.linkedin.com/in/leonardo-barbosa-85a20b135/" target="_blank" rel="noopener noreferrer" style="font-size:10px;padding:4px 11px">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+      Leonardo Barbosa · BIM Manager
+    </a>
+  </div>
 </div>
 
 <!-- Modal diagrama ampliado -->
@@ -732,7 +755,7 @@ const EXAMPLES = {
     { item:'Requisitos de segurança e privacidade de dados',
       title:'Política de segurança — exemplo OIR',
       type:'code',
-      code:`Classificação dos dados:
+      code:\`Classificação dos dados:
   PÚBLICO      → Plantas urbanísticas, memoriais descritivos gerais
   RESTRITO     → Modelos BIM detalhados, parâmetros de equipamentos
   CONFIDENCIAL → Sistemas de segurança, rotas de fuga, CFTV
@@ -745,7 +768,7 @@ Controle de acesso:
 
 LGPD:
   - Dados pessoais de funcionários não devem constar no modelo
-  - Contratos com fornecedores incluem cláusula de dados`,
+  - Contratos com fornecedores incluem cláusula de dados\`,
     },
     { item:'Frequência de atualização do AIM durante operação',
       title:'Plano de atualização do AIM — exemplo OIR',
@@ -796,7 +819,7 @@ LGPD:
     { item:'Requisitos de geolocalização e orientação',
       title:'Georeferenciamento — exemplo AIR',
       type:'code',
-      code:`Sistema de coordenadas:
+      code:\`Sistema de coordenadas:
   Datum:     SIRGAS 2000
   Projeção:  UTM Fuso 24S
   Unidade:   metros
@@ -813,7 +836,7 @@ Tolerância posicional:
 Entrega obrigatória:
   - IFC com IfcSite georreferenciado
   - Relatório de levantamento topográfico (PDF)
-  - Arquivo LAS / nuvem de pontos as-built`,
+  - Arquivo LAS / nuvem de pontos as-built\`,
       note:'Sem georeferenciamento correto, o AIM não pode ser integrado ao GIS da organização nem ao gêmeo digital.',
     },
     { item:'Informações de segurança (rotas de fuga, compartimentação)',
@@ -870,7 +893,7 @@ Entrega obrigatória:
     { item:'Padrão de nomenclatura de arquivos e elementos',
       title:'Convenção de nomenclatura — exemplo EIR',
       type:'code',
-      code:`Padrão de arquivo:
+      code:\`Padrão de arquivo:
   {PROJETO}-{CONTRATADA}-{DISCIPLINA}-{FASE}-{TIPO}-{REV}
 
 Exemplos:
@@ -886,12 +909,12 @@ Disciplinas:
 Fases:
   G100  Coordenação (LOD 300)
   G200  Detalhamento (LOD 350)
-  G300  As-built     (LOD 400)`,
+  G300  As-built     (LOD 400)\`,
     },
     { item:'Configuração e localização do CDE',
       title:'Configuração do CDE — exemplo EIR',
       type:'code',
-      code:`Plataforma:    Autodesk Construction Cloud (ACC)
+      code:\`Plataforma:    Autodesk Construction Cloud (ACC)
 Organização:   [Nome do contratante]
 
 Estrutura de pastas obrigatória:
@@ -910,12 +933,12 @@ Permissões mínimas:
   BIM Author     → WIP: leitura+escrita / Shared: leitura
   BIM Coordinator→ Shared: leitura+escrita
   BIM Manager    → todos os ambientes
-  Contratante    → Published: leitura`,
+  Contratante    → Published: leitura\`,
     },
     { item:'Formato e versão IFC exigidos',
       title:'Requisitos IFC — exemplo EIR',
       type:'code',
-      code:`Schema:         IFC 4.0 (IFC4 ADD2 TC1)
+      code:\`Schema:         IFC 4.0 (IFC4 ADD2 TC1)
                 Aceito IFC 2x3 com aprovação prévia por escrito
 
 Classificação:  Uniclass 2015 (elementos)
@@ -928,7 +951,7 @@ Configuração Revit → IFC:
 
 Validação obrigatória antes de submeter ao gate:
   1. Solibri → checar contra IDS vigente
-  2. IfcOpenShell → verificar integridade do schema`,
+  2. IfcOpenShell → verificar integridade do schema\`,
     },
     { item:'Frequência e datas das entregas (milestones)',
       title:'Cronograma de entregas — exemplo EIR',
@@ -946,7 +969,7 @@ Validação obrigatória antes de submeter ao gate:
     { item:'Protocolo de gestão de problemas (BCF, RFI)',
       title:'Protocolo BCF — exemplo EIR',
       type:'code',
-      code:`Plataforma:  BIMcollab Nexus (BCF API 3.0)
+      code:\`Plataforma:  BIMcollab Nexus (BCF API 3.0)
 
 Prioridades e prazos:
   BLOCKER → impede publicação       → 3 dias úteis
@@ -960,7 +983,7 @@ Campos obrigatórios em toda issue:
   - GUID do elemento IFC vinculado
   - Responsável pela resolução
   - Data limite
-  - Snapshot (mínimo 1 imagem)`,
+  - Snapshot (mínimo 1 imagem)\`,
     },
     { item:'Requisitos de segurança e privacidade dos dados',
       title:'Segurança de dados — exemplo EIR',
@@ -980,7 +1003,7 @@ Campos obrigatórios em toda issue:
     { item:'Estratégia de produção da informação por disciplina',
       title:'Estratégia de produção HID — exemplo BEP',
       type:'code',
-      code:`Disciplina:   HID (Supressão de Incêndio)
+      code:\`Disciplina:   HID (Supressão de Incêndio)
 Software:     Revit MEP 2024
 Responsável:  Eng. João Silva (BIM Author HID)
 Coordenador:  Arq. Maria Costa (BIM Coordinator)
@@ -993,7 +1016,7 @@ Fluxo de entrega:
   1. Produção local (WIP) → validação IDS local
   2. Publicação em Shared: 2× por semana
   3. Workflow de validação → Published: a cada milestone
-  4. Clash com STR e ARC: toda sexta-feira`,
+  4. Clash com STR e ARC: toda sexta-feira\`,
     },
     { item:'Papéis e responsabilidades: BIM Manager, Coordinator, Author',
       title:'RACI de papéis BIM — exemplo BEP',
@@ -1028,7 +1051,7 @@ Fluxo de entrega:
     { item:'Padrão de nomenclatura adotado',
       title:'Confirmação de nomenclatura — exemplo BEP',
       type:'code',
-      code:`Confirmamos adoção integral do padrão EIR §3.4:
+      code:\`Confirmamos adoção integral do padrão EIR §3.4:
   {PROJETO}-{CONTRATADA}-{DISCIPLINA}-{FASE}-{TIPO}-{REV}
 
 Implementação no Revit:
@@ -1041,7 +1064,7 @@ Implementação no Revit:
 Validação antes de cada publicação:
   Dynamo: ValidateNomenclatura_v2.dyn
   
-Desvios identificados: NENHUM`,
+Desvios identificados: NENHUM\`,
     },
     { item:'Protocolo de qualidade e validação (IDS, clash detection)',
       title:'Checklist de qualidade — exemplo BEP',
@@ -1058,7 +1081,7 @@ Desvios identificados: NENHUM`,
     { item:'Procedimento de entrega e publicação no CDE',
       title:'Workflow de publicação — exemplo BEP',
       type:'code',
-      code:`PASSO 1 — Autor (WIP → Shared)
+      code:\`PASSO 1 — Autor (WIP → Shared)
   1. Exportar IFC com template PROJ-IFC4-Export
   2. Rodar Dynamo: ValidateNomenclatura_v2.dyn
   3. Rodar Solibri: checar IDS v2.1 local
@@ -1076,7 +1099,7 @@ PASSO 3 — Workflow automatizado de validação
   2. Valida contra IDS (mcp-revit)
   3. APROVADO → move para Published
   4. Loga audit event (Foundation API)
-  5. REJEITADO → cria issue BCF + notifica autor`,
+  5. REJEITADO → cria issue BCF + notifica autor\`,
     },
     { item:'Plano de treinamento da equipe',
       title:'Plano de treinamento — exemplo BEP',
@@ -1093,7 +1116,7 @@ PASSO 3 — Workflow automatizado de validação
     { item:'Referência ao MIDP e TIDPs',
       title:'Referência MIDP/TIDP — exemplo BEP',
       type:'code',
-      code:`O BEP §7 incorpora por referência:
+      code:\`O BEP §7 incorpora por referência:
 
 MIDP:
   Arquivo: PROJ-MIDP-v1.0.xlsx
@@ -1109,14 +1132,14 @@ TIDPs por disciplina:
   MEC: PROJ-MEC-TIDP-v1.0.xlsx → BIM Author MEC
 
 Cada TIDP deve estar publicado no CDE antes
-do início da produção da disciplina.`,
+do início da produção da disciplina.\`,
     },
   ],
   ids: [
     { item:'Parâmetros obrigatórios por IfcType',
       title:'IDS XML — IfcFlowTerminal (Sprinkler)',
       type:'code',
-      code:`<ids:specification name="HID-Sprinkler-G100" ifcVersion="IFC4">
+      code:\`<ids:specification name="HID-Sprinkler-G100" ifcVersion="IFC4">
   <ids:applicability>
     <ids:entity>
       <ids:name>
@@ -1139,13 +1162,13 @@ do início da produção da disciplina.`,
       <ids:name><ids:simpleValue>FlowRateAtMinPressure</ids:simpleValue></ids:name>
     </ids:property>
   </ids:requirements>
-</ids:specification>`,
+</ids:specification>\`,
       note:'Este é o arquivo IDS carregado pelo motor de regras para as verificações R1–R5 do workflow de validação automática.',
     },
     { item:'Valores permitidos (enumerações) por parâmetro',
       title:'Enumerações IDS — Pressure_Rating',
       type:'code',
-      code:`<!-- Valores permitidos para Pressure_Rating -->
+      code:\`<!-- Valores permitidos para Pressure_Rating -->
 <ids:property propertySet="Pset_Sprinkler" minOccurs="1">
   <ids:name>
     <ids:simpleValue>NominalPressure</ids:simpleValue>
@@ -1173,7 +1196,7 @@ do início da produção da disciplina.`,
       <ids:enumeration value="141°C"/>
     </ids:restriction>
   </ids:value>
-</ids:property>`,
+</ids:property>\`,
       note:'Enumerações garantem consistência e permitem validação automática sem intervenção humana.',
     },
     { item:'Formato de dado esperado (string, número, data)',
@@ -1274,7 +1297,7 @@ do início da produção da disciplina.`,
     { item:'Status CDE alvo: WIP → Shared → Published',
       title:'Workflow de status CDE — exemplo TIDP',
       type:'code',
-      code:`WIP (Work in Progress)
+      code:\`WIP (Work in Progress)
   Quem acessa:  autor + BIM Manager
   Quando usar:  produção ativa
   Ação:         salvar versões livremente
@@ -1293,7 +1316,7 @@ PUBLISHED
 
 ARCHIVED
   Quando usar:  nova versão Published substitui
-  Ação:         apenas consulta histórica`,
+  Ação:         apenas consulta histórica\`,
     },
     { item:'Responsável e revisor por entregável',
       title:'Matriz de responsabilidades — exemplo TIDP',
@@ -1442,7 +1465,7 @@ ARCHIVED
     { item:'Localização e orientação real do ativo',
       title:'Dados de geolocalização — exemplo AIM',
       type:'code',
-      code:`IfcSite (levantamento topográfico as-built):
+      code:\`IfcSite (levantamento topográfico as-built):
   RefLatitude:   -20° 19' 42.35" S
   RefLongitude:  -40° 20' 18.72" W
   RefElevation:  +12.350 m (nível do mar)
@@ -1454,7 +1477,7 @@ Desvio entre projeto e as-built:
   Horizontal: 2,3 cm (dentro da tolerância AIR ±5cm)
   Vertical:   0,8 cm (dentro da tolerância AIR ±2cm)
   
-Verificação: workflow de validação G300 — APROVADO`,
+Verificação: workflow de validação G300 — APROVADO\`,
     },
     { item:'Histórico de alterações durante a obra',
       title:'Registro de alterações — exemplo AIM',
@@ -1554,7 +1577,7 @@ Verificação: workflow de validação G300 — APROVADO`,
     { item:'Escopo do projeto',
       title:'Escopo do projeto — exemplo §5.1.2',
       type:'code',
-      code:`Empreendimento: Hospital Regional Norte — Bloco Cirúrgico
+      code:\`Empreendimento: Hospital Regional Norte — Bloco Cirúrgico
 Área construída:  12.500 m²   |   Pavimentos: 5
 Disciplinas BIM:  ARC, STR, HID, ELE, MEC
 
@@ -1568,7 +1591,7 @@ Questões a responder em cada PCD:
   PCD-1 → Layouts atendem ao programa médico-funcional?
   PCD-2 → Projeto executivo compatibilizado e completo?
   PCD-3 → Obra conforme o modelo BIM aprovado?
-  PCD-4 → AIM contém todos os dados FM do AIR?`,
+  PCD-4 → AIM contém todos os dados FM do AIR?\`,
       note:'O RIR define as questões — não as respostas. As respostas chegam via modelos de informação entregues nos marcos.',
     },
     { item:'Propósito da informação em cada ponto de decisão',
@@ -1675,7 +1698,7 @@ Questões a responder em cada PCD:
     { item:'Convenção de nomenclatura de contêineres de informação',
       title:'Padrão de nomenclatura — exemplo §5.1.4',
       type:'code',
-      code:`Padrão ABNT NBR ISO 19650-2 + Anexo nacional:
+      code:\`Padrão ABNT NBR ISO 19650-2 + Anexo nacional:
   {PROJETO}-{ORIG}-{FUNC}-{ESP}-{FORMA}-{DISC}-{NUM}
 
 Campos:
@@ -1689,7 +1712,7 @@ Campos:
 
 Exemplos:
   HOS-NORTE-HIDRO-01-00-M3D-HID-0001.ifc   ← modelo HID G100
-  HOS-NORTE-ARQUIT-01-P3-SHT-ARC-0023.pdf  ← planta pav. 3`,
+  HOS-NORTE-ARQUIT-01-P3-SHT-ARC-0023.pdf  ← planta pav. 3\`,
     },
     { item:'Uso da informação na fase operacional do ativo',
       title:'Informação para operação — exemplo §5.1.4',
@@ -1708,7 +1731,7 @@ Exemplos:
     { item:'Identificador único por contêiner com campos e delimitador',
       title:'Estrutura do identificador CDE — exemplo §5.1.7',
       type:'code',
-      code:`Identificador (ABNT NBR ISO 19650-2 §5.1.7):
+      code:\`Identificador (ABNT NBR ISO 19650-2 §5.1.7):
   {PROJETO}-{ORIG}-{FUNC}-{ESP}-{FORMA}-{DISC}-{NUM}
 
 Exemplos válidos no ACC:
@@ -1719,7 +1742,7 @@ Exemplos válidos no ACC:
 Atributos obrigatórios por contêiner:
   Estado (suitability):  S0=WIP / S1=Shared / S2=Published / S5=Archived
   Revisão:               A01,A02…(WIP)  P01,P02…(Published)
-  Classificação:         Uniclass 2015 código aplicável`,
+  Classificação:         Uniclass 2015 código aplicável\`,
       note:'O CDE deve registrar usuário + data em cada mudança de estado — essa é a trilha de auditoria exigida pelo §5.1.7.',
     },
     { item:'Atributos obrigatórios: estado, revisão, classificação',
@@ -1818,7 +1841,7 @@ Atributos obrigatórios por contêiner:
     { item:'Estratégia de entrega e estrutura organizacional da equipe',
       title:'Estratégia de entrega — exemplo §5.3.2',
       type:'code',
-      code:`Estratégia de federação:
+      code:\`Estratégia de federação:
   Modelo mestre federado: Navisworks (coordenação)
   Modelos de autoria:     Revit por disciplina (trabalho paralelo)
   Frequência de federação: semanal (toda sexta-feira 17h)
@@ -1834,7 +1857,7 @@ Estrutura de equipes de tarefa:
 Objetivos de produção colaborativa:
   - Taxa de aprovação gate ≥ 85% na 1ª submissão
   - Zero clashes críticos na entrega MI-02
-  - COBie 100% preenchido na entrega MI-04`,
+  - COBie 100% preenchido na entrega MI-04\`,
     },
     { item:'Estratégia de federação dos modelos',
       title:'Estratégia de federação — exemplo §5.3.2',
@@ -2045,7 +2068,7 @@ Objetivos de produção colaborativa:
     { item:'Geração de contêineres e verificação QA antes de Shared',
       title:'Checklist QA antes de S1 Shared — exemplo §5.6.2',
       type:'code',
-      code:`Checklist QA obrigatório (executar antes de mover para Shared):
+      code:\`Checklist QA obrigatório (executar antes de mover para Shared):
 
   1. Nomenclatura do arquivo
      └─ Dynamo: ValidateNomenclatura_v2.dyn → PASS
@@ -2066,7 +2089,7 @@ Objetivos de produção colaborativa:
      └─ Nenhum clash BLOCKER com modelos S2 Published
 
   RESULTADO: PASS → mover para S1 Shared
-             FAIL → corrigir e reexecutar checklist`,
+             FAIL → corrigir e reexecutar checklist\`,
     },
     { item:'Revisão da informação e aprovação para compartilhamento',
       title:'Fluxo de aprovação para S1 Shared — exemplo §5.6.4',
@@ -2125,7 +2148,7 @@ Objetivos de produção colaborativa:
     { item:'Revisão e autorização pela contratada líder',
       title:'Autorização formal LAP — exemplo §5.7',
       type:'code',
-      code:`TERMO DE AUTORIZAÇÃO DE ENTREGA DO MODELO DE INFORMAÇÃO
+      code:\`TERMO DE AUTORIZAÇÃO DE ENTREGA DO MODELO DE INFORMAÇÃO
 Projeto: Hospital Regional Norte — Bloco Cirúrgico
 Data: 2025-11-18   Versão: AIM v1.0
 
@@ -2139,7 +2162,7 @@ A contratada líder [EMPRESA LAP] certifica que:
    reunião de 2025-11-10 (ata anexa)
 
 Responsável: Eng. Carlos Mendes — BIM Manager (LAP)
-Assinatura: _________________   Data: 2025-11-18`,
+Assinatura: _________________   Data: 2025-11-18\`,
     },
     { item:'Submissão para aceite da contratante',
       title:'Protocolo de aceite pela contratante — exemplo §5.7',
@@ -2159,7 +2182,7 @@ Assinatura: _________________   Data: 2025-11-18`,
     { item:'Arquivamento do modelo de informação do projeto (PIM)',
       title:'Procedimento de arquivamento PIM — exemplo §5.8',
       type:'code',
-      code:`Procedimento de arquivamento — §5.8.1
+      code:\`Procedimento de arquivamento — §5.8.1
 
 1. Verificar que todos os contêineres estão em S2 Published
    └─ MIDP final: 100% publicado → OK
@@ -2179,7 +2202,7 @@ Assinatura: _________________   Data: 2025-11-18`,
 
 5. Notificar o FM sobre a transferência
    └─ Reunião de handover: 2025-12-15
-   └─ Treinamento CMMS: 2025-12-16 e 17`,
+   └─ Treinamento CMMS: 2025-12-16 e 17\`,
     },
     { item:'Captura de lições aprendidas para futuros empreendimentos',
       title:'Registro de lições aprendidas — exemplo §5.8.2',
@@ -2247,7 +2270,7 @@ Assinatura: _________________   Data: 2025-11-18`,
     { item:'Método de atribuição do nível de informação necessária (LoIN)',
       title:'Método de atribuição LoIN — exemplo §5.1.5',
       type:'code',
-      code:`Método de atribuição LoIN (§5.1.5):
+      code:\`Método de atribuição LoIN (§5.1.5):
 
 Para cada requisito de informação do RIR:
   1. Identificar o propósito de uso (ex: manutenção preventiva)
@@ -2260,7 +2283,7 @@ Exemplo para sprinkler (propósito: manutenção CMMS):
   LOD: 300 (G100) → 350 (G200) → 400 (G300)
   LOI: Tipo + vazão (G100) → Fabricante + modelo (G200)
        → N.série + data inst. + garantia (G300)
-  Fase de exigência máxima: G300 (entrega AIM)`,
+  Fase de exigência máxima: G300 (entrega AIM)\`,
     },
   ],
   'p2-51-6': [
@@ -2304,7 +2327,7 @@ Exemplo para sprinkler (propósito: manutenção CMMS):
     { item:'Direitos de propriedade intelectual (DPI) da informação',
       title:'DPI e licenciamento — exemplo §5.1.8',
       type:'code',
-      code:`Protocolo de informação — §5.1.8 — DPI
+      code:\`Protocolo de informação — §5.1.8 — DPI
 
 Informação de referência fornecida pela contratante:
   Titularidade: contratante
@@ -2320,7 +2343,7 @@ Informação produzida pela equipe de entrega:
 
 Rescisão:
   Informação publicada (S2) → passa imediatamente ao contratante
-  Informação em WIP (S0) → negociada caso a caso`,
+  Informação em WIP (S0) → negociada caso a caso\`,
     },
   ],
   'p2-53-3': [
@@ -2669,9 +2692,9 @@ function buildChain(){
   chain.forEach((n, i) => {
     const node = document.createElement('div');
     node.className = 'chain-node';
-    node.innerHTML = `<span class="chain-pill" style="background:${n.bg};color:${n.color};border-color:${n.color}33"
-      onclick="openModal('${n.id}')" title="Abrir ${n.label}">${n.label}</span>
-      <span class="chain-sub">${n.sub}</span>`;
+    node.innerHTML = \`<span class="chain-pill" style="background:\${n.bg};color:\${n.color};border-color:\${n.color}33"
+      onclick="openModal('\${n.id}')" title="Abrir \${n.label}">\${n.label}</span>
+      <span class="chain-sub">\${n.sub}</span>\`;
     wrap.appendChild(node);
     if(i < chain.length - 1){
       const arr = document.createElement('span');
@@ -2738,7 +2761,7 @@ function buildKanbanAll(){
     // Cabeçalho da fase
     const head = document.createElement('div');
     head.className = 'kb-phase-head';
-    head.innerHTML = `<span class="kb-phase-head-title">${phase.label}</span><span class="kb-phase-head-sub">${phase.sub}</span>`;
+    head.innerHTML = \`<span class="kb-phase-head-title">\${phase.label}</span><span class="kb-phase-head-sub">\${phase.sub}</span>\`;
     block.appendChild(head);
 
     // Colunas da fase
@@ -2753,11 +2776,11 @@ function buildKanbanAll(){
       const colHead = document.createElement('div');
       colHead.className = 'kb-phase-col-head';
       const countDocs = col.docs.filter(id => DOCS.find(x => x.id === id)).length;
-      colHead.innerHTML = `<span>${col.label}</span>
+      colHead.innerHTML = \`<span>\${col.label}</span>
         <span style="display:flex;align-items:center;gap:4px">
-          <span class="kb-iso-tag ${col.tag}">${col.tag === 'iso1' ? 'ISO-1' : 'ISO-2'}</span>
-          <span style="font-size:8px;color:var(--ink4)">${countDocs}</span>
-        </span>`;
+          <span class="kb-iso-tag \${col.tag}">\${col.tag === 'iso1' ? 'ISO-1' : 'ISO-2'}</span>
+          <span style="font-size:8px;color:var(--ink4)">\${countDocs}</span>
+        </span>\`;
       colEl.appendChild(colHead);
 
       // Cards mini
@@ -2794,7 +2817,7 @@ function buildKanban(){
     const pill = document.createElement('span');
     pill.className = 'kb-seq-pill';
     pill.textContent = col.label;
-    pill.style.cssText = `background:${phaseBgs[i]};color:${phaseColors[i]};border:1px solid ${phaseColors[i]}33`;
+    pill.style.cssText = \`background:\${phaseBgs[i]};color:\${phaseColors[i]};border:1px solid \${phaseColors[i]}33\`;
     seqBar.appendChild(pill);
     if(i < KANBAN_COLS.length - 1){
       const sep = document.createElement('span');
@@ -2809,8 +2832,8 @@ function buildKanban(){
     const docs = DOCS.filter(d => d.phase === col.id);
     const el = document.createElement('div');
     el.className = 'kb-col';
-    el.innerHTML = `<div class="kb-col-header"><span>${col.label}</span><span class="kb-col-count">${docs.length}</span></div>
-      <div class="kb-col-body" id="col-${col.id}" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,'${col.id}')"></div>`;
+    el.innerHTML = \`<div class="kb-col-header"><span>\${col.label}</span><span class="kb-col-count">\${docs.length}</span></div>
+      <div class="kb-col-body" id="col-\${col.id}" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,'\${col.id}')"></div>\`;
     board.appendChild(el);
     const body = el.querySelector('.kb-col-body');
     docs.forEach(d => body.appendChild(makeCard(d)));
@@ -2828,7 +2851,7 @@ function buildKanban(){
     const pill = document.createElement('span');
     pill.className = 'kb-seq-pill';
     pill.textContent = col.label;
-    pill.style.cssText = `background:${p2bgs[i]};color:${p2colors[i]};border:1px solid ${p2colors[i]}33`;
+    pill.style.cssText = \`background:\${p2bgs[i]};color:\${p2colors[i]};border:1px solid \${p2colors[i]}33\`;
     seqBar2.appendChild(pill);
     if(i < KANBAN_COLS_P2.length - 1){
       const sep = document.createElement('span');
@@ -2849,8 +2872,8 @@ function buildKanban(){
     const el = document.createElement('div');
     el.className = 'kb-col';
     el.style.minWidth = '155px';
-    el.innerHTML = `<div class="kb-col-header" style="font-size:9px"><span>${col.label}</span><span class="kb-col-count">${docs2.length}</span></div>
-      <div class="kb-col-body" id="col-${col.id}" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,'${col.id}')"></div>`;
+    el.innerHTML = \`<div class="kb-col-header" style="font-size:9px"><span>\${col.label}</span><span class="kb-col-count">\${docs2.length}</span></div>
+      <div class="kb-col-body" id="col-\${col.id}" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,'\${col.id}')"></div>\`;
     board2.appendChild(el);
     const body2 = el.querySelector('.kb-col-body');
     docs2.forEach(d => body2.appendChild(makeCard(d)));
@@ -2874,18 +2897,18 @@ function makeCard(d){
   el.ondragend   = () => el.classList.remove('dragging');
   const deps = d.feedsBy.map(fid => {
     const f = DOCS.find(x => x.id === fid);
-    return f ? `<span class="dep-tag" style="background:${f.bg};color:${f.color};border-color:${f.color}">${f.acronym}</span>` : '';
+    return f ? \`<span class="dep-tag" style="background:\${f.bg};color:\${f.color};border-color:\${f.color}">\${f.acronym}</span>\` : '';
   }).join('');
-  el.innerHTML = `
+  el.innerHTML = \`
     <div class="card-top">
-      <span class="card-acronym" style="color:${d.color}">${d.acronym}</span>
-      <span class="card-phase-dot" style="background:${PHASES[d.phase]?.color||'#888'}"></span>
+      <span class="card-acronym" style="color:\${d.color}">\${d.acronym}</span>
+      <span class="card-phase-dot" style="background:\${PHASES[d.phase]?.color||'#888'}"></span>
     </div>
-    <div class="card-name">${d.name}</div>
-    <div class="card-norm">${d.norm}</div>
-    ${deps ? `<div class="card-deps">${deps}</div>` : ''}
-    <div class="card-owner">${d.owner}</div>
-    <button class="card-detail-btn" style="background:${d.bg};color:${d.color};border-color:${d.color}" onclick="openModal('${d.id}')">Ver detalhes</button>`;
+    <div class="card-name">\${d.name}</div>
+    <div class="card-norm">\${d.norm}</div>
+    \${deps ? \`<div class="card-deps">\${deps}</div>\` : ''}
+    <div class="card-owner">\${d.owner}</div>
+    <button class="card-detail-btn" style="background:\${d.bg};color:\${d.color};border-color:\${d.color}" onclick="openModal('\${d.id}')">Ver detalhes</button>\`;
   return el;
 }
 
@@ -2959,14 +2982,14 @@ function buildGantt(){
       const d = DOCS.find(x => x.id === docId); if(!d) return;
       const row = document.createElement('div'); row.className = 'gantt-row';
       const lbl = document.createElement('div'); lbl.className = 'gantt-label';
-      lbl.innerHTML = `<div class="gantt-label-a" style="color:${d.color}">${d.acronym}</div><div class="gantt-label-n">${d.name.split(' ').slice(0,3).join(' ')}</div>`;
+      lbl.innerHTML = \`<div class="gantt-label-a" style="color:\${d.color}">\${d.acronym}</div><div class="gantt-label-n">\${d.name.split(' ').slice(0,3).join(' ')}</div>\`;
       row.appendChild(lbl);
       const track = document.createElement('div'); track.className = 'gantt-track';
       MONTHS.forEach(() => { const gc = document.createElement('div'); gc.className = 'gantt-cell'; track.appendChild(gc); });
       const left  = (d.ganttStart / MONTHS.length * 100).toFixed(2);
       const width = ((d.ganttEnd - d.ganttStart) / MONTHS.length * 100).toFixed(2);
       const bar = document.createElement('div'); bar.className = 'gantt-bar';
-      bar.style.cssText = `left:${left}%;width:${width}%;background:${d.bg};color:${d.color};border:1px solid ${d.color}50`;
+      bar.style.cssText = \`left:\${left}%;width:\${width}%;background:\${d.bg};color:\${d.color};border:1px solid \${d.color}50\`;
       bar.textContent = d.acronym; bar.title = d.name; bar.onclick = () => openModal(d.id);
       if(ganttMode === 'all' && d.normPart){
         const t = document.createElement('span');
@@ -2978,8 +3001,8 @@ function buildGantt(){
       d.feedsBy.forEach(depId => {
         const dep = DOCS.find(x => x.id === depId); if(!dep) return;
         const dp = document.createElement('div'); dp.className = 'gantt-dep-dot';
-        dp.style.cssText = `left:${(dep.ganttEnd/MONTHS.length*100).toFixed(2)}%;background:${dep.color}`;
-        dp.title = `Depende de ${dep.acronym}`; track.appendChild(dp);
+        dp.style.cssText = \`left:\${(dep.ganttEnd/MONTHS.length*100).toFixed(2)}%;background:\${dep.color}\`;
+        dp.title = \`Depende de \${dep.acronym}\`; track.appendChild(dp);
       });
       track.appendChild(bar); row.appendChild(track); c.appendChild(row);
     });
@@ -2993,89 +3016,89 @@ function openModal(id){
 
   const feedsHtml = d.feeds.map(fid => {
     const f = DOCS.find(x => x.id === fid);
-    return f ? `<span class="mdep" style="color:${f.color};border-color:${f.color}" onclick="openModal('${f.id}')">${f.acronym}</span>` : '';
+    return f ? \`<span class="mdep" style="color:\${f.color};border-color:\${f.color}" onclick="openModal('\${f.id}')">\${f.acronym}</span>\` : '';
   }).join('') || '<span style="font-size:12px;color:var(--ink3)">—</span>';
 
   const feedsByHtml = d.feedsBy.map(fid => {
     const f = DOCS.find(x => x.id === fid);
-    return f ? `<span class="mdep" style="color:${f.color};border-color:${f.color}" onclick="openModal('${f.id}')">${f.acronym}</span>` : '';
+    return f ? \`<span class="mdep" style="color:\${f.color};border-color:\${f.color}" onclick="openModal('\${f.id}')">\${f.acronym}</span>\` : '';
   }).join('') || '<span style="font-size:12px;color:var(--ink3)">Documento raiz</span>';
 
-  const itemsHtml = exs.map((ex, i) => `
-    <li class="content-item" style="border-left-color:${d.color}" onclick="openExample('${id}',${i})">
-      <span class="content-item-dot" style="background:${d.color}"></span>
-      <span class="content-item-text">${ex.item}</span>
+  const itemsHtml = exs.map((ex, i) => \`
+    <li class="content-item" style="border-left-color:\${d.color}" onclick="openExample('\${id}',\${i})">
+      <span class="content-item-dot" style="background:\${d.color}"></span>
+      <span class="content-item-text">\${ex.item}</span>
       <span style="display:flex;align-items:center;gap:4px;flex-shrink:0">
         <span class="content-badge badge-norm">Norma</span>
         <span class="content-item-hint">ver exemplo →</span>
       </span>
-    </li>`).join('');
+    </li>\`).join('');
 
   const fieldsHtml = (d.fields||[]).map(f =>
-    `<div class="mf"><div class="mf-label">${f.l}</div><div class="mf-val">${f.v}</div></div>`
+    \`<div class="mf"><div class="mf-label">\${f.l}</div><div class="mf-val">\${f.v}</div></div>\`
   ).join('');
 
   // badge de parte normativa
   const normBadge = d.normPart === 'iso2'
-    ? `<span class="norm-badge iso2">ISO 19650-2 — Fase de entrega</span>`
+    ? \`<span class="norm-badge iso2">ISO 19650-2 — Fase de entrega</span>\`
     : d.normPart === 'iso3'
-    ? `<span class="norm-badge iso3">ISO 19650-1 — Conceitos e ciclo de vida</span>`
+    ? \`<span class="norm-badge iso3">ISO 19650-1 — Conceitos e ciclo de vida</span>\`
     : d.normPart === 'ids'
-    ? `<span class="norm-badge ids">IDS — Verificação formal de requisitos</span>`
+    ? \`<span class="norm-badge ids">IDS — Verificação formal de requisitos</span>\`
     : '';
 
   // caixa "para quê"
   const decisionHtml = d.decisionFor
-    ? `<div class="decision-box" style="border-left-color:${d.color}">
-        <strong>Apoia qual decisão?</strong>${d.decisionFor}
-      </div>` : '';
+    ? \`<div class="decision-box" style="border-left-color:\${d.color}">
+        <strong>Apoia qual decisão?</strong>\${d.decisionFor}
+      </div>\` : '';
 
   // camadas BEP
   const bepLayersHtml = d.bepLayers
-    ? `<div class="modal-section">
+    ? \`<div class="modal-section">
         <div class="modal-section-title">Duas camadas obrigatórias</div>
-        <div class="bep-layer-row">${d.bepLayers.map(l =>
-          `<div class="bep-layer"><div class="bep-layer-label">${l.l}</div><div class="bep-layer-val">${l.v}</div></div>`
+        <div class="bep-layer-row">\${d.bepLayers.map(l =>
+          \`<div class="bep-layer"><div class="bep-layer-label">\${l.l}</div><div class="bep-layer-val">\${l.v}</div></div>\`
         ).join('')}</div>
-      </div>` : '';
+      </div>\` : '';
 
   // nota hierarquia IDS
   const idsNoteHtml = d.idsNote
-    ? `<div class="ids-note"><strong>Hierarquia normativa:</strong> ${d.idsNote}</div>` : '';
+    ? \`<div class="ids-note"><strong>Hierarquia normativa:</strong> \${d.idsNote}</div>\` : '';
 
-  document.getElementById('modal-content').innerHTML = `
+  document.getElementById('modal-content').innerHTML = \`
     <div class="modal-header">
       <div>
-        ${normBadge}
-        <div class="modal-acronym" style="color:${d.color}">${d.acronym}</div>
-        <div class="modal-fullname">${d.name}</div>
-        <div class="modal-norm">${d.norm} · ${PHASES[d.phase]?.label} · ${d.owner}</div>
+        \${normBadge}
+        <div class="modal-acronym" style="color:\${d.color}">\${d.acronym}</div>
+        <div class="modal-fullname">\${d.name}</div>
+        <div class="modal-norm">\${d.norm} · \${PHASES[d.phase]?.label} · \${d.owner}</div>
       </div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-    ${decisionHtml}
-    ${d.purpose ? `<div class="modal-section">
+    \${decisionHtml}
+    \${d.purpose ? \`<div class="modal-section">
       <div class="modal-section-title">Objetivo</div>
-      <div class="modal-purpose">${d.purpose}</div>
-    </div>` : ''}
-    ${bepLayersHtml}
-    ${idsNoteHtml}
-    ${fieldsHtml ? `<div class="modal-section">
+      <div class="modal-purpose">\${d.purpose}</div>
+    </div>\` : ''}
+    \${bepLayersHtml}
+    \${idsNoteHtml}
+    \${fieldsHtml ? \`<div class="modal-section">
       <div class="modal-section-title">Campos principais</div>
-      <div class="modal-fields">${fieldsHtml}</div>
-    </div>` : ''}
+      <div class="modal-fields">\${fieldsHtml}</div>
+    </div>\` : ''}
     <div class="modal-section">
       <div class="modal-section-title">Conteúdo obrigatório — clique para ver exemplo</div>
-      <ul class="content-list">${itemsHtml}</ul>
+      <ul class="content-list">\${itemsHtml}</ul>
     </div>
     <div class="modal-section">
       <div class="modal-section-title">Alimenta →</div>
-      <div class="modal-deps-row">${feedsHtml}</div>
+      <div class="modal-deps-row">\${feedsHtml}</div>
     </div>
     <div class="modal-section">
       <div class="modal-section-title">← Alimentado por</div>
-      <div class="modal-deps-row">${feedsByHtml}</div>
-    </div>`;
+      <div class="modal-deps-row">\${feedsByHtml}</div>
+    </div>\`;
   document.getElementById('modal-overlay').classList.add('show');
 }
 function closeModal(){ document.getElementById('modal-overlay').classList.remove('show'); }
@@ -3090,45 +3113,45 @@ function openExample(docId, idx){
   let body = '';
 
   if(ex.narrative){
-    body += `<div class="ex-sec">
+    body += \`<div class="ex-sec">
       <div class="ex-sec-title">Contexto</div>
-      <div class="ex-narrative" style="border-color:${d.color}">${ex.narrative}</div>
-    </div>`;
+      <div class="ex-narrative" style="border-color:\${d.color}">\${ex.narrative}</div>
+    </div>\`;
   }
 
   if(ex.type === 'table' && ex.cols){
-    const ths = ex.cols.map(c => `<th>${c}</th>`).join('');
-    const trs = (ex.rows||[]).map(r => `<tr>${r.map(cell=>`<td>${cell}</td>`).join('')}</tr>`).join('');
-    body += `<div class="ex-sec">
+    const ths = ex.cols.map(c => \`<th>\${c}</th>\`).join('');
+    const trs = (ex.rows||[]).map(r => \`<tr>\${r.map(cell=>\`<td>\${cell}</td>\`).join('')}</tr>\`).join('');
+    body += \`<div class="ex-sec">
       <div class="ex-sec-title">Exemplo</div>
-      <div style="overflow-x:auto"><table class="ex-table"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table></div>
-    </div>`;
+      <div style="overflow-x:auto"><table class="ex-table"><thead><tr>\${ths}</tr></thead><tbody>\${trs}</tbody></table></div>
+    </div>\`;
   }
 
   if(ex.type === 'code' && ex.code){
-    body += `<div class="ex-sec">
+    body += \`<div class="ex-sec">
       <div class="ex-sec-title">Exemplo</div>
-      <div class="ex-code">${ex.code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
-    </div>`;
+      <div class="ex-code">\${ex.code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+    </div>\`;
   }
 
   if(ex.note){
-    body += `<div class="ex-note">${ex.note}</div>`;
+    body += \`<div class="ex-note">\${ex.note}</div>\`;
   }
 
-  document.getElementById('ex-modal').innerHTML = `
+  document.getElementById('ex-modal').innerHTML = \`
     <div class="ex-head">
       <div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
-          <div class="ex-badge" style="background:${d.bg};color:${d.color}">${d.acronym} · ${d.norm}</div>
+          <div class="ex-badge" style="background:\${d.bg};color:\${d.color}">\${d.acronym} · \${d.norm}</div>
           <span class="content-badge badge-ex">Exemplo</span>
           <span class="content-badge badge-impl">Cenário ilustrativo</span>
         </div>
-        <div class="ex-title">${ex.title}</div>
+        <div class="ex-title">\${ex.title}</div>
       </div>
       <button class="ex-close" onclick="closeEx()">✕</button>
     </div>
-    ${body}`;
+    \${body}\`;
   document.getElementById('ex-overlay').classList.add('show');
 }
 function closeEx(){ document.getElementById('ex-overlay').classList.remove('show'); }
@@ -3161,21 +3184,21 @@ const DIAG_DATA = {
 
 function openDiag(id){
   const d = DIAG_DATA[id]; if(!d) return;
-  const card = document.querySelector(`[onclick="openDiag('${id}')"]`);
+  const card = document.querySelector(\`[onclick="openDiag('\${id}')"]\`);
   const svg = card ? card.querySelector('svg').outerHTML : '';
-  document.getElementById('diag-modal-content').innerHTML = `
+  document.getElementById('diag-modal-content').innerHTML = \`
     <div class="diag-modal-head">
       <div>
-        <div class="diag-modal-title">${d.title}</div>
-        <div class="diag-modal-ref">${d.ref}</div>
+        <div class="diag-modal-title">\${d.title}</div>
+        <div class="diag-modal-ref">\${d.ref}</div>
       </div>
       <button class="diag-close" onclick="closeDiag()">✕</button>
     </div>
     <div style="background:var(--bg);border-radius:8px;padding:16px;margin-bottom:14px">
-      ${svg.replace(/style="width:100%;height:80px"/g,'style="width:100%;height:auto"').replace(/style="width:100%;height:90px"/g,'style="width:100%;height:auto"')}
+      \${svg.replace(/style="width:100%;height:80px"/g,'style="width:100%;height:auto"').replace(/style="width:100%;height:90px"/g,'style="width:100%;height:auto"')}
     </div>
-    <div style="font-size:12px;color:var(--ink2);line-height:1.75">${d.desc}</div>
-    <div style="font-size:10px;color:var(--ink3);margin-top:10px;font-family:var(--mono)">Diagrama recriado na linguagem visual do projeto · Caráter interpretativo · Consulte a norma original para uso normativo</div>`;
+    <div style="font-size:12px;color:var(--ink2);line-height:1.75">\${d.desc}</div>
+    <div style="font-size:10px;color:var(--ink3);margin-top:10px;font-family:var(--mono)">Diagrama recriado na linguagem visual do projeto · Caráter interpretativo · Consulte a norma original para uso normativo</div>\`;
   document.getElementById('diag-overlay').classList.add('show');
 }
 function closeDiag(){ document.getElementById('diag-overlay').classList.remove('show'); }
@@ -3189,10 +3212,2235 @@ function setView(name, btn){
 }
 function buildLegend(){
   document.getElementById('legend').innerHTML = Object.entries(PHASES).map(([,ph]) =>
-    `<div class="leg"><div class="leg-dot" style="background:${ph.color}"></div>${ph.label}</div>`
+    \`<div class="leg"><div class="leg-dot" style="background:\${ph.color}"></div>\${ph.label}</div>\`
   ).join('');
 }
 buildKanban(); buildGantt(); buildLegend(); buildChain();
 </script>
 </body>
 </html>
+`;
+// ─── CLASSES IFC (buildingSMART IFC 4) ───────────────────────────────────────
+const IFC_CLASSES = [
+  "IfcWall","IfcWallStandardCase","IfcCurtainWall","IfcWindow","IfcDoor",
+  "IfcSlab","IfcRoof","IfcCovering","IfcColumn","IfcBeam","IfcFooting",
+  "IfcPile","IfcStair","IfcStairFlight","IfcRamp","IfcRampFlight",
+  "IfcRailing","IfcSpace","IfcBuildingStorey","IfcBuilding","IfcSite",
+  "IfcZone","IfcPlate","IfcMember","IfcReinforcingBar","IfcReinforcingMesh",
+  "IfcOpeningElement","IfcVoidingFeature","IfcFurniture","IfcSystemFurnitureElement",
+  "IfcSanitaryTerminal","IfcPipeSegment","IfcPipeFitting","IfcValve","IfcPump",
+  "IfcTank","IfcFireSuppressionTerminal","IfcWasteTerminal","IfcFlowMeter",
+  "IfcDuctSegment","IfcDuctFitting","IfcAirTerminal","IfcFan","IfcChiller",
+  "IfcBoiler","IfcHeatExchanger","IfcCoil","IfcFilter","IfcDamper",
+  "IfcCableSegment","IfcCableFitting","IfcCableCarrierSegment","IfcCableCarrierFitting",
+  "IfcLightFixture","IfcOutlet","IfcSwitchingDevice","IfcElectricAppliance",
+  "IfcDistributionBoard","IfcElectricGenerator","IfcElectricMotor",
+  "IfcTransformer","IfcProtectiveDevice","IfcAlarm","IfcSensor",
+  "IfcController","IfcActuator","IfcCommunicationsAppliance",
+  "IfcBuildingElementProxy","IfcFlowSegment","IfcFlowFitting","IfcFlowTerminal",
+  "IfcDistributionElement","IfcElementAssembly","IfcVirtualElement","IfcGrid",
+];
+
+// Classe IFC default por nome de categoria (match parcial)
+const IFC_DEFAULT_MAP = [
+  [/PAREDE|PAREDES|VEDA|BLOCO/i, "IfcWall"],
+  [/CORTINA|CURTAIN/i, "IfcCurtainWall"],
+  [/JANELA/i, "IfcWindow"],
+  [/PORTA/i, "IfcDoor"],
+  [/LAJE|LAJES/i, "IfcSlab"],
+  [/COBERTURA|TELHADO/i, "IfcRoof"],
+  [/FORRO|REVESTIMENTO|ACABAMENT/i, "IfcCovering"],
+  [/PILAR|PILARES/i, "IfcColumn"],
+  [/VIGA|VIGAS/i, "IfcBeam"],
+  [/BLOCO DE FUNDA|SAPATA|FUNDA/i, "IfcFooting"],
+  [/ESTACA/i, "IfcPile"],
+  [/ESCADA/i, "IfcStair"],
+  [/RAMPA/i, "IfcRamp"],
+  [/GUARDA|CORRIMÃO|RAILING/i, "IfcRailing"],
+  [/ESPAÇO|AMBIENTE|ZONA/i, "IfcSpace"],
+  [/ARMAÇÃO|ARMADURA/i, "IfcReinforcingBar"],
+  [/FURO|ABERTURA/i, "IfcOpeningElement"],
+  [/MOBILI/i, "IfcFurniture"],
+  [/LOUÇA|SANIT|VASO|PIA|LAVAT/i, "IfcSanitaryTerminal"],
+  [/TUBULA|TUBO DE|PIPE/i, "IfcPipeSegment"],
+  [/CONEXÃO HIDR|VÁLVULA HIDR|JOELHO|TÊ /i, "IfcPipeFitting"],
+  [/VÁLVULA/i, "IfcValve"],
+  [/BOMBA/i, "IfcPump"],
+  [/RESERVA|TANQUE/i, "IfcTank"],
+  [/HIDRANTE|SPRINKLER|EXTINTOR|INCÊND/i, "IfcFireSuppressionTerminal"],
+  [/CAIXA DE GORD|RALO|DRENAGEM/i, "IfcWasteTerminal"],
+  [/HIDRÔMETRO|MEDIDOR/i, "IfcFlowMeter"],
+  [/DUTO/i, "IfcDuctSegment"],
+  [/DIFUSOR|GRELHA|TOMADA DE AR|BOCA DE AR/i, "IfcAirTerminal"],
+  [/VENTILADOR/i, "IfcFan"],
+  [/CHILLER/i, "IfcChiller"],
+  [/BOILER|AQUECEDOR/i, "IfcBoiler"],
+  [/EVAPORADOR|CONDENSADOR|TROCADOR/i, "IfcHeatExchanger"],
+  [/SERPENTINA|COIL/i, "IfcCoil"],
+  [/FILTRO/i, "IfcFilter"],
+  [/DAMPER|REGISTRO DE AR/i, "IfcDamper"],
+  [/CABO|CABEAMENTO|CONDUTOR/i, "IfcCableSegment"],
+  [/ELETRODUTO|CONDUÍTE|ELETROCALHA|PERFILADO/i, "IfcCableCarrierSegment"],
+  [/LUMINÁRIA|ILUMIN/i, "IfcLightFixture"],
+  [/TOMADA|OUTLET/i, "IfcOutlet"],
+  [/INTERRUPTOR|DISJUNTOR/i, "IfcSwitchingDevice"],
+  [/QUADRO|DISTRIBUIÇÃO ELÉTRICA/i, "IfcDistributionBoard"],
+  [/GERADOR/i, "IfcElectricGenerator"],
+  [/TRANSFORMADOR/i, "IfcTransformer"],
+  [/SENSOR|DETECTOR/i, "IfcSensor"],
+  [/EIXO|GRID/i, "IfcGrid"],
+  [/BRISE|VENEZIANA|DIVISÓRIA|PLACA/i, "IfcPlate"],
+  [/MONTANTE|PERFIL ESTR/i, "IfcMember"],
+];
+const defaultIfc = (name) => {
+  for (const [rx, cls] of IFC_DEFAULT_MAP) if (rx.test(name)) return cls;
+  return "IfcBuildingElementProxy";
+};
+
+// ─── LOIN CATEGORIES ─────────────────────────────────────────────────────────
+const LOIN_CATS = {
+  "ARQ – Arquitetura": ["ESPAÇO/AMBIENTES/ZONA","FECHAMENTO EXTERNOS VERTICAIS","PAREDE EXTERNA","JANELAS","PORTAS","BRISE E VENEZIANA","DISPOSITIVOS E ACESSÓRIOS ESPECIAIS PARA PAREDES EXTERNAS","FECHAMENTO HORIZONTAL (FORROS, TELHADOS E PISO NÃO ESTRUTURAL)","COBERTURA","COMPONENTES SECUNDÁRIOS DE COBERTURA","BARREIRAS HORIZONTAIS DE TRÁFEGO","ABERTURAS HORIZONTAIS","FECHAMENTOS SUPERIORES EXTERNOS","INTERIORES","CONSTRUÇÕES INTERNAS","DIVISÓRIAS INTERNAS","CONSTRUÇÃO SUSPENSA NO TETO","ELEMENTOS INTERNOS","ACABAMENTOS DE INTERIORES","ACABAMENTOS DE PAREDE","ACABAMENTOS INTERNOS PISO","ACABAMENTOS DA ESCADA","ACABAMENTOS DE TETO","TOPOGRAFIA E TERRENO","ACESSÓRIOS HIDRÁULICOS (LOUÇAS)","ACESSÓRIOS HIDRÁULICOS (METAIS)","MOBILIÁRIO"],
+  "EST – Estrutura": ["VIGAS","PILARES","LAJES ESTRUTURAIS","ESCADAS","RAMPAS","PAREDES ESTRUTURAIS","BLOCO DE FUNDAÇÃO","VIGA DE FUNDAÇÃO","FUROS","ARMAÇÃO"],
+  "CLI – Ar Condicionado": ["ESPAÇO/AMBIENTES/ZONA","ELEMENTOS DE VENTILAÇÃO E EXAUSTÃO","ELEMENTOS DE VENTILAÇÃO","VENTILADOR CENTRÍFUGO","VENTILADOR AXIAL OU TRIPLO HÉLICE","ELEMENTOS DE EXAUSTÃO","CAPTOR DE EXAUSTÃO","DUTO DE AR DE EXAUSTÃO","VENTILADOR DE EXAUSTÃO","CHAMINÉ DE EXAUSTÃO","ELEMENTOS DE SISTEMAS DE REFRIGERAÇÃO","ISOLAMENTO TÉRMICO DE REDE DE DUTOS","DUTO FLEXÍVEL PARA DISTRIBUIÇÃO DE AR REFRIGERADO","DUTO RÍGIDO PARA DISTRIBUIÇÃO DE AR REFRIGERADO","DUTO CONVENCIONAL RETANGULAR APARENTE","BOCA DE AR","DIFUSOR DE INSUFLAMENTO","DIFUSOR DE RETORNO","GRELHA DE INSUFLAMENTO","GRELHA DE RETORNO","TOMADA DE AR EXTERNO","VENTILADOR PARA DISTRIBUIÇÃO DE AR","EVAPORADOR PARA TROCA DE CALOR","CONDENSADOR PARA TROCA DE CALOR"],
+  "HID – Hidráulica": ["ESPAÇO/AMBIENTES/ZONA","SISTEMA DE ÁGUA NÃO POTÁVEL","SISTEMA DE ÁGUA POTÁVEL FRIA","SISTEMA DE ÁGUA PRESSURIZADA","SISTEMA DE ÁGUAS SERVIDAS","DRENAGEM DE ÁGUA PLUVIAL","SISTEMA DE ALIMENTAÇÃO AQUECEDOR","SISTEMA DE ALIMENTAÇÃO AQUECEDOR PRESSURIZAÇÃO","SISTEMA DE ALIMENTAÇÃO PREDIAL","SISTEMA DE ALIMENTAÇÃO DE VÁLVULAS","SISTEMA DE ASPIRAÇÃO PISCINA","CHUVEIROS AUTOMÁTICOS","DRENO","ESGOTO SANITÁRIO","EXTRAVASÃO-AVISO","EXTRAVASÃO-RESERVATÓRIO","LIMPEZA-RESERVATÓRIO","RECALQUE","RECALQUE ÁGUAS PLUVIAIS","RECALQUE ÁGUA SERVIDA","RECALQUE ESGOTO","RESPIRO ÁGUA QUENTE","RETORNO ÁGUA GELADA","RETORNO ÁGUA QUENTE","RETORNO PISCINA","SUCÇÃO","VENTILAÇÃO","SISTEMA DE SPRINKLER","EXTINTORES DE INCÊNDIO","HIDRANTES","FUROS"],
+  "ELE – Elétrica": ["ESPAÇO/AMBIENTES/ZONA","INSTALAÇÃO DE GERAÇÃO DE ENERGIA","SERVIÇO E DISTRIBUIÇÃO DE ELETRICIDADE","ENERGIA ELÉTRICA DE USO GERAL","ILUMINAÇÃO","SISTEMAS ELÉTRICOS DIVERSOS","COMPONENTES COMPLEMENTARES DE SISTEMAS ELÉTRICOS","FUROS"],
+  "VED – Vedações": ["BLOCOS EXTERNOS","BLOCOS INTERNOS","VERGAS","CONTRA-VERGAS","MONTANTES DRYWALL","SISTEMA DRYWALL","ISOLAMENTO/REFORÇO","PLACAS","PASSAGENS HIDRÁULICAS","PASSAGENS ELÉTRICAS","TELAS E PINOS"],
+};
+const LOIN_GEOM = ["NG","SG","PG","AG"];
+const LOIN_INFO = ["NI","LI","MI","AI"];
+
+// Parâmetros IFC obrigatórios por disciplina (sub-seções da biblioteca)
+const IFC_PARAMS_BY_DISC = {
+  "ARQ – Arquitetura": [
+    {nome:"Name", tipo:"IfcLabel", unidade:"—", obrig:true},
+    {nome:"Description", tipo:"IfcText", unidade:"—", obrig:false},
+    {nome:"ObjectType", tipo:"IfcLabel", unidade:"—", obrig:true},
+    {nome:"Tag", tipo:"IfcIdentifier", unidade:"—", obrig:true},
+    {nome:"IsExternal", tipo:"IfcBoolean", unidade:"—", obrig:true},
+    {nome:"LoadBearing", tipo:"IfcBoolean", unidade:"—", obrig:false},
+    {nome:"FireRating", tipo:"IfcLabel", unidade:"min", obrig:true},
+    {nome:"AcousticRating", tipo:"IfcLabel", unidade:"dB", obrig:false},
+    {nome:"ThermalTransmittance", tipo:"IfcThermalTransmittanceMeasure", unidade:"W/m²K", obrig:false},
+    {nome:"Reference", tipo:"IfcIdentifier", unidade:"—", obrig:true},
+  ],
+  "EST – Estrutura": [
+    {nome:"Name", tipo:"IfcLabel", unidade:"—", obrig:true},
+    {nome:"Tag", tipo:"IfcIdentifier", unidade:"—", obrig:true},
+    {nome:"LoadBearing", tipo:"IfcBoolean", unidade:"—", obrig:true},
+    {nome:"Material", tipo:"IfcMaterial", unidade:"—", obrig:true},
+    {nome:"ConcreteGrade", tipo:"IfcLabel", unidade:"fck (MPa)", obrig:true},
+    {nome:"SteelGrade", tipo:"IfcLabel", unidade:"MPa", obrig:false},
+    {nome:"Span", tipo:"IfcLengthMeasure", unidade:"m", obrig:false},
+    {nome:"CrossSectionArea", tipo:"IfcAreaMeasure", unidade:"m²", obrig:false},
+    {nome:"FireRating", tipo:"IfcLabel", unidade:"min", obrig:true},
+    {nome:"Reference", tipo:"IfcIdentifier", unidade:"—", obrig:true},
+  ],
+  "CLI – Ar Condicionado": [
+    {nome:"Name", tipo:"IfcLabel", unidade:"—", obrig:true},
+    {nome:"Tag", tipo:"IfcIdentifier", unidade:"—", obrig:true},
+    {nome:"SystemType", tipo:"IfcLabel", unidade:"—", obrig:true},
+    {nome:"NominalAirFlowRate", tipo:"IfcVolumetricFlowRateMeasure", unidade:"m³/h", obrig:true},
+    {nome:"NominalPowerConsumption", tipo:"IfcPowerMeasure", unidade:"W", obrig:true},
+    {nome:"NominalCoolingCapacity", tipo:"IfcPowerMeasure", unidade:"W (BTU/h)", obrig:true},
+    {nome:"Manufacturer", tipo:"IfcLabel", unidade:"—", obrig:false},
+    {nome:"ModelLabel", tipo:"IfcLabel", unidade:"—", obrig:false},
+    {nome:"Reference", tipo:"IfcIdentifier", unidade:"—", obrig:true},
+  ],
+  "HID – Hidráulica": [
+    {nome:"Name", tipo:"IfcLabel", unidade:"—", obrig:true},
+    {nome:"Tag", tipo:"IfcIdentifier", unidade:"—", obrig:true},
+    {nome:"SystemType", tipo:"IfcLabel", unidade:"—", obrig:true},
+    {nome:"NominalDiameter", tipo:"IfcPositiveLengthMeasure", unidade:"mm", obrig:true},
+    {nome:"Material", tipo:"IfcMaterial", unidade:"—", obrig:true},
+    {nome:"PressureRating", tipo:"IfcPressureMeasure", unidade:"bar", obrig:true},
+    {nome:"FlowRate", tipo:"IfcVolumetricFlowRateMeasure", unidade:"L/s", obrig:false},
+    {nome:"Reference", tipo:"IfcIdentifier", unidade:"—", obrig:true},
+  ],
+  "ELE – Elétrica": [
+    {nome:"Name", tipo:"IfcLabel", unidade:"—", obrig:true},
+    {nome:"Tag", tipo:"IfcIdentifier", unidade:"—", obrig:true},
+    {nome:"SystemType", tipo:"IfcLabel", unidade:"—", obrig:true},
+    {nome:"NominalVoltage", tipo:"IfcElectricVoltageMeasure", unidade:"V", obrig:true},
+    {nome:"NominalCurrent", tipo:"IfcElectricCurrentMeasure", unidade:"A", obrig:true},
+    {nome:"NominalPowerConsumption", tipo:"IfcPowerMeasure", unidade:"W", obrig:true},
+    {nome:"NumberOfPoles", tipo:"IfcInteger", unidade:"—", obrig:false},
+    {nome:"IPRating", tipo:"IfcLabel", unidade:"—", obrig:false},
+    {nome:"Reference", tipo:"IfcIdentifier", unidade:"—", obrig:true},
+  ],
+  "VED – Vedações": [
+    {nome:"Name", tipo:"IfcLabel", unidade:"—", obrig:true},
+    {nome:"Tag", tipo:"IfcIdentifier", unidade:"—", obrig:true},
+    {nome:"IsExternal", tipo:"IfcBoolean", unidade:"—", obrig:true},
+    {nome:"Material", tipo:"IfcMaterial", unidade:"—", obrig:true},
+    {nome:"Thickness", tipo:"IfcPositiveLengthMeasure", unidade:"mm", obrig:true},
+    {nome:"FireRating", tipo:"IfcLabel", unidade:"min", obrig:true},
+    {nome:"AcousticRating", tipo:"IfcLabel", unidade:"dB", obrig:false},
+    {nome:"Reference", tipo:"IfcIdentifier", unidade:"—", obrig:true},
+  ],
+};
+
+const IFC_DATA_TYPES = ["IfcLabel","IfcText","IfcIdentifier","IfcBoolean","IfcInteger","IfcReal",
+  "IfcLengthMeasure","IfcPositiveLengthMeasure","IfcAreaMeasure","IfcVolumeMeasure","IfcMassMeasure",
+  "IfcPowerMeasure","IfcElectricVoltageMeasure","IfcElectricCurrentMeasure","IfcPressureMeasure",
+  "IfcVolumetricFlowRateMeasure","IfcThermalTransmittanceMeasure","IfcMaterial","IfcDate","IfcURIReference"];
+
+const MEP_COLORS = [
+  {sistema:"Água não-Potável",rgb:"35,79,51",hex:"#234F33"},
+  {sistema:"Água Potável (Fria)",rgb:"119,187,17",hex:"#77BB11"},
+  {sistema:"Água Pressurizada",rgb:"0,158,73",hex:"#009E49"},
+  {sistema:"Água Quente",rgb:"238,0,102",hex:"#EE0066"},
+  {sistema:"Água Quente Pressurizada",rgb:"153,33,53",hex:"#992135"},
+  {sistema:"Água Servida",rgb:"89,63,61",hex:"#593F3D"},
+  {sistema:"Águas Pluviais",rgb:"4,38,227",hex:"#0426E3"},
+  {sistema:"Alimentação Aquecedor",rgb:"249,130,127",hex:"#F9827F"},
+  {sistema:"Alimentação Aquecedor Press.",rgb:"234,107,191",hex:"#EA6BBF"},
+  {sistema:"Alimentação Predial",rgb:"127,186,0",hex:"#7FBA00"},
+  {sistema:"Alimentação Válvulas",rgb:"186,232,96",hex:"#BAE860"},
+  {sistema:"Aspiração Piscina",rgb:"112,206,226",hex:"#70CEE2"},
+  {sistema:"Chuveiros Automáticos",rgb:"255,0,0",hex:"#FF0000"},
+  {sistema:"Dreno",rgb:"0,135,137",hex:"#008789"},
+  {sistema:"Esgoto",rgb:"128,64,0",hex:"#804000"},
+  {sistema:"Extravasão-Aviso",rgb:"249,229,38",hex:"#F9E526"},
+  {sistema:"Extravasão-Reservatório",rgb:"255,198,30",hex:"#FFC61E"},
+  {sistema:"Limpeza-Reservatório",rgb:"216,181,17",hex:"#D8B511"},
+  {sistema:"Recalque",rgb:"33,91,51",hex:"#215B33"},
+  {sistema:"Recalque Água Pluviais",rgb:"63,0,119",hex:"#3F0077"},
+  {sistema:"Recalque Água Servida",rgb:"181,168,153",hex:"#B5A899"},
+  {sistema:"Recalque Esgoto",rgb:"114,91,38",hex:"#725B26"},
+  {sistema:"Respiro Água Quente",rgb:"226,61,40",hex:"#E23D28"},
+  {sistema:"Retorno Água Gelada",rgb:"100,0,140",hex:"#64008C"},
+  {sistema:"Retorno Água Quente",rgb:"237,122,158",hex:"#ED7A9E"},
+  {sistema:"Retorno Piscina",rgb:"0,188,226",hex:"#00BCE2"},
+  {sistema:"Sucção",rgb:"94,221,193",hex:"#5EDDC1"},
+  {sistema:"Ventilação (HID)",rgb:"238,85,0",hex:"#EE5500"},
+  {sistema:"Gás Combustível",rgb:"255,170,0",hex:"#FFAA00"},
+  {sistema:"Ventilação Gás",rgb:"249,155,12",hex:"#F99B0C"},
+  {sistema:"Alimentadores (ELE)",rgb:"255,155,0",hex:"#FF9B00"},
+  {sistema:"Iluminação",rgb:"0,153,0",hex:"#009900"},
+  {sistema:"Telecomunicações",rgb:"118,147,60",hex:"#76933C"},
+  {sistema:"Para-raios",rgb:"255,63,0",hex:"#FF3F00"},
+  {sistema:"Hidrantes",rgb:"255,0,0",hex:"#FF0000"},
+  {sistema:"Sprinkler",rgb:"205,0,0",hex:"#CD0000"},
+  {sistema:"Detecção de Incêndio",rgb:"255,51,0",hex:"#FF3300"},
+  {sistema:"Segurança",rgb:"0,105,205",hex:"#0069CD"},
+  {sistema:"Automação",rgb:"255,125,125",hex:"#FF7D7D"},
+  {sistema:"Drenagem",rgb:"153,51,136",hex:"#993388"},
+  {sistema:"Dutos de Exaustão (CLI)",rgb:"64,128,128",hex:"#408080"},
+  {sistema:"Dutos de Ventilação (CLI)",rgb:"0,127,0",hex:"#007F00"},
+  {sistema:"Dutos de Ar Externo",rgb:"82,165,0",hex:"#52A500"},
+  {sistema:"Duto de Retorno",rgb:"128,128,255",hex:"#8080FF"},
+  {sistema:"Duto de Ar Pressurizado",rgb:"240,98,237",hex:"#F062ED"},
+  {sistema:"Duto de Insuflamento",rgb:"255,255,128",hex:"#FFFF80"},
+  {sistema:"Extração de Fumaça",rgb:"64,64,192",hex:"#4040C0"},
+  {sistema:"Água Gelada",rgb:"0,255,205",hex:"#00FFCD"},
+  {sistema:"Arquitetura",rgb:"245,205,165",hex:"#F5CDA5"},
+  {sistema:"Estrutura de Concreto",rgb:"192,192,192",hex:"#C0C0C0"},
+  {sistema:"Estrutura Metálica",rgb:"155,50,0",hex:"#9B3200"},
+];
+
+// Entregáveis default (lista inicial para novo projeto)
+const DEFAULT_ENTREGAVEIS = [
+  "Modelo IFC","Documentação 2D: DWG / PDF","Memorial Descritivo",
+  "Detalhes Construtivos","Memorial de Cálculos","Tabela de Quantitativos",
+];
+
+// RACI default por disciplina × atividade
+const RACI_ATIVIDADES = [
+  {id:"eir",ativ:"Definição do EIR",sec:"§5.1",desc:"Compilação dos requisitos de troca de informação a partir do OIR/AIR/PIR. O EIR é a base contratual BIM — define LOIN, formatos, CDE, nomenclatura e datas-marco."},
+  {id:"peb",ativ:"Elaboração do PEB",sec:"§5.4.1",desc:"Plano de Execução BIM (Definitivo). Detalha COMO a equipe executará os requisitos do EIR: recursos, software, fluxos, cronograma, matriz de responsabilidades."},
+  {id:"prod",ativ:"Produção dos modelos",sec:"§5.6.2",desc:"Modelagem 3D de cada disciplina respeitando o LOIN definido para a fase. Modelos devem estar em WIP até aprovação interna."},
+  {id:"coord",ativ:"Coordenação e federação",sec:"§5.6",desc:"Montagem do modelo federado, detecção de interferências, reuniões de compatibilização, emissão de BCFs."},
+  {id:"acc",ativ:"Validação de acurácia",sec:"§5.6.5",desc:"Verificação IDS: classes IFC corretas, property sets preenchidos, coordenadas, nomenclatura, conformidade com LOIN."},
+  {id:"aprov",ativ:"Aprovação final",sec:"§5.7",desc:"Aceite formal do cliente após entrega do modelo compatibilizado. Transição para publicação (S2) no CDE."},
+  {id:"tidp",ativ:"TIDP por disciplina",sec:"§5.4.4",desc:"Task Information Delivery Plan — cronograma de entregas da própria disciplina, definido pela Task Team."},
+  {id:"midp",ativ:"MIDP consolidado",sec:"§5.4.5",desc:"Master Information Delivery Plan — consolidação de todos os TIDPs pela coordenação (LAP)."},
+  {id:"furos",ativ:"Protocolo de furos",sec:"§5.6",desc:"Disciplinas modelam furos como 'FURO', Estrutura analisa implicações e emite modelo final aprovado."},
+  {id:"bcf",ativ:"Ciclo BCF / Issues",sec:"§5.6",desc:"Abertura, resposta e fechamento de issues no CDE. Apenas a coordenação pode fechar issues."},
+];
+
+const DEFAULT_RACI = {
+  ARQ: {eir:"C", peb:"C", prod:"R", coord:"C", acc:"R", aprov:"C", tidp:"R", midp:"C", furos:"R", bcf:"R"},
+  EST: {eir:"C", peb:"C", prod:"R", coord:"C", acc:"R", aprov:"C", tidp:"R", midp:"C", furos:"A", bcf:"R"},
+  ELE: {eir:"C", peb:"C", prod:"R", coord:"C", acc:"R", aprov:"C", tidp:"R", midp:"C", furos:"R", bcf:"R"},
+  HID: {eir:"C", peb:"C", prod:"R", coord:"C", acc:"R", aprov:"C", tidp:"R", midp:"C", furos:"R", bcf:"R"},
+  CLI: {eir:"C", peb:"C", prod:"R", coord:"C", acc:"R", aprov:"C", tidp:"R", midp:"C", furos:"R", bcf:"R"},
+  VED: {eir:"I", peb:"C", prod:"R", coord:"C", acc:"R", aprov:"I", tidp:"R", midp:"C", furos:"I", bcf:"R"},
+  COO: {eir:"A", peb:"A/R", prod:"C", coord:"A/R", acc:"A", aprov:"A/R", tidp:"A", midp:"A/R", furos:"C", bcf:"A"},
+  BIM: {eir:"R", peb:"R", prod:"I", coord:"C", acc:"C", aprov:"I", tidp:"C", midp:"C", furos:"I", bcf:"C"},
+  CLIENTE: {eir:"A/R", peb:"C", prod:"I", coord:"I", acc:"I", aprov:"A/R", tidp:"C", midp:"A", furos:"I", bcf:"I"},
+};
+
+const DEFAULT_PROJECT = {
+  nome:"Novo Projeto", codigo:"", numero:"0000", tipo:"Edifício Residencial",
+  cliente:"", departamento:"", emailCliente:"", telefoneCliente:"",
+  enderecoCompleto:"", cidade:"", estado:"SP",
+  dataInicio:"", areaConstruida:"", areaTerreno:"", numPavimentos:"", numUnidades:"",
+  tipologia:"", certificacaoAmbiental:"",
+  coordenador:"", revisao:"R00", data: new Date().toISOString().slice(0,10),
+  ns:"7389333.2200", lo:"330268.3550", elev:"738.505", datum:"SIRGAS 2000", anguloNorte:"0.00°",
+  repositorio:"Autodoc", cde:"Construflow", psetName:"", templateRvt:"", refArquivo:"",
+  lod:"350", mvd:"IFC4 – Reference View",
+  pbpImageData: null,
+  equipes:[
+    {sigla:"COO",disciplina:"Coordenação/Compatibilização",formato:"2D/3D",empresa:"",contato:"",email:"",software:"Solibri",versao:""},
+    {sigla:"BIM",disciplina:"Implementação BIM",formato:"3D",empresa:"",contato:"",email:"",software:"Solibri",versao:""},
+    {sigla:"ARQ",disciplina:"Arquitetura",formato:"2D/3D",empresa:"",contato:"",email:"",software:"Revit",versao:""},
+    {sigla:"EST",disciplina:"Estrutura Concreto",formato:"2D/3D",empresa:"",contato:"",email:"",software:"Revit",versao:""},
+    {sigla:"ELE",disciplina:"Instalações Elétricas",formato:"2D/3D",empresa:"",contato:"",email:"",software:"AltoQI",versao:""},
+    {sigla:"HID",disciplina:"Instalações Hidráulicas",formato:"2D/3D",empresa:"",contato:"",email:"",software:"AltoQI",versao:""},
+    {sigla:"CLI",disciplina:"Ar Condicionado",formato:"2D/3D",empresa:"",contato:"",email:"",software:"Revit",versao:""},
+    {sigla:"VED",disciplina:"Vedações",formato:"2D/3D",empresa:"",contato:"",email:"",software:"Revit",versao:""},
+  ],
+  equipeCols: ["sigla","disciplina","formato","empresa","contato","email","software","versao"],
+  fases:[
+    {fase:"Estudo Preliminar",inicio:"",meses:"2",entregaveis:"Projetos 2D",status:"Previsto"},
+    {fase:"Ante Projeto (2D/3D)",inicio:"",meses:"3",entregaveis:"Modelos conceituais ARQ, checagem de acurácia, relatório de compatibilização",status:"Previsto"},
+    {fase:"Pré-Executivo (3D)",inicio:"",meses:"3",entregaveis:"Modelos disciplinares iniciais, relatório de compatibilização",status:"Previsto"},
+    {fase:"Projeto Executivo (3D)",inicio:"",meses:"3",entregaveis:"Modelos compatibilizados, relatório de compatibilização",status:"Previsto"},
+    {fase:"Liberado para Obra (3D)",inicio:"",meses:"1",entregaveis:"Modelo federado revisado e compatibilizado para obra",status:"Previsto"},
+  ],
+  usosBim:{concepcao:true,documentacao:true,visualizacao:true,compatibilizacao:true,coordenacao:true,sustentabilidade:false,analises:false,quantitativos:false,canteiro:false,planejamento4d:false,coordenacao3d:false,fabricacao:false,custos5d:false,mockups:false,manutencao:false,analisesSis:false,gestao:false,asbuilt:false},
+  loin:{}, loinAttrs:{}, loinIfc:{}, // loinIfc[disc][cat] = "IfcWall"
+  setores:[
+    {codigo:"EMB",nome:"Modelo Embasamento",abrangencia:"5º Subsolo até pavimentos T1.3º PAV. e T2.3º PAV."},
+    {codigo:"TP1",nome:"Modelo Tipo 01 (Torre 1)",abrangencia:"4º Pavimento ao 30º Pavimento (Torre 1)"},
+    {codigo:"TP2",nome:"Modelo Tipo 02 e 03 (Torre 2)",abrangencia:"4º ao 16º pav. (Tipo 2) + 17º ao 30º pav."},
+    {codigo:"COB",nome:"Modelo Cobertura",abrangencia:"31º Pavimento, Duplex Inferior e Ático"},
+    {codigo:"FUR",nome:"Modelo Furações",abrangencia:"Última revisão de todos os pavimentos do projeto"},
+  ],
+  niveis:[], notas:"",
+  ifcVersion:"IFC4 Reference View", coordBase:"Shared Coordinates",
+  exportSetup:"IFC_ADDOR", ifcAuth:"PeG",
+  exportRevitPsets:true, exportIfcCommonPsets:true, exportBaseQtys:true,
+  exportSchedules:true, exportLinkedIfc:false, exportVisibleOnly:true,
+  includeIfcSiteElevation:true, geomLod:"Low",
+  // Novos campos
+  psets: [], // [{id, nome, tipo, unidade, fase, obrigatorio, disciplina, descricao}]
+  entregaveis: DEFAULT_ENTREGAVEIS.map((n)=>({nome:n, marcas:{}})), // marcas[faseIdx] = true/false
+  raci: JSON.parse(JSON.stringify(DEFAULT_RACI)),
+};
+// ─── STYLES ──────────────────────────────────────────────────────────────────
+const C = {
+  bg:"#0d1117", bg2:"#161b22", bg3:"#1c2128", bg4:"#22272e",
+  border:"#30363d", border2:"#3d444d",
+  text:"#e6edf3", text2:"#8b949e", text3:"#484f58",
+  accent:"#238636", accent2:"#2ea043", accentLight:"#3fb950",
+  accentBg:"#0d2218", accentBorder:"#238636",
+  gold:"#d29922", goldBg:"#1c1a00", goldBorder:"#d29922",
+  red:"#da3633", redBg:"#1c0606", redBorder:"#da3633",
+  blue:"#388bfd", blueBg:"#051d4d", blueBorder:"#388bfd",
+  purple:"#8957e5", purpleBg:"#1a0f3a",
+};
+
+const S = {
+  app:{fontFamily:"'IBM Plex Sans',system-ui,sans-serif",background:C.bg,color:C.text,minHeight:"100vh",display:"flex",flexDirection:"column",fontSize:13},
+  topbar:{background:C.bg2,borderBottom:`1px solid ${C.border}`,padding:"0 20px",display:"flex",alignItems:"center",justifyContent:"space-between",height:48,flexShrink:0},
+  body:{display:"flex",flex:1,overflow:"hidden",height:"calc(100vh - 48px)"},
+  sidebar:{width:240,background:C.bg2,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",overflow:"hidden",flexShrink:0},
+  main:{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"},
+  mainContent:{flex:1,overflowY:"auto",padding:"20px 24px"},
+  card:{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:"14px 16px",marginBottom:12},
+  cardTitle:{fontSize:9,letterSpacing:"0.12em",textTransform:"uppercase",color:C.accentLight,fontFamily:"monospace",marginBottom:10,fontWeight:600},
+  grid2:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10},
+  grid3:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10},
+  grid4:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginBottom:10},
+  label:{fontSize:10,letterSpacing:"0.05em",textTransform:"uppercase",color:C.text2,fontFamily:"monospace",display:"block",marginBottom:3},
+  input:{width:"100%",background:C.bg3,border:`1px solid ${C.border}`,borderRadius:4,padding:"6px 9px",color:C.text,fontSize:12.5,fontFamily:"'IBM Plex Sans',sans-serif",outline:"none",boxSizing:"border-box"},
+  select:{width:"100%",background:C.bg3,border:`1px solid ${C.border}`,borderRadius:4,padding:"6px 9px",color:C.text,fontSize:12.5,fontFamily:"'IBM Plex Sans',sans-serif",outline:"none",boxSizing:"border-box"},
+  textarea:{width:"100%",background:C.bg3,border:`1px solid ${C.border}`,borderRadius:4,padding:"7px 9px",color:C.text,fontSize:12.5,fontFamily:"'IBM Plex Sans',sans-serif",outline:"none",resize:"vertical",boxSizing:"border-box",minHeight:70},
+  btn:(v)=>{const m={primary:{background:C.accent,color:"#fff",border:"none"},ghost:{background:"transparent",color:C.text2,border:`1px solid ${C.border}`},danger:{background:C.redBg,color:"#ff6e6a",border:`1px solid ${C.redBorder}`},icon:{background:C.bg3,color:C.text2,border:`1px solid ${C.border}`}};return{...{borderRadius:5,padding:"6px 12px",cursor:"pointer",fontSize:11.5,fontWeight:500,fontFamily:"'IBM Plex Sans',sans-serif",transition:"opacity .15s"},...(m[v]||m.ghost)}},
+  table:{width:"100%",borderCollapse:"collapse",fontSize:12},
+  th:{textAlign:"left",padding:"7px 10px",background:C.bg3,color:C.text2,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:"monospace",borderBottom:`1px solid ${C.border}`,whiteSpace:"nowrap"},
+  td:{padding:"6px 9px",borderBottom:`1px solid ${C.bg3}`,color:C.text2,verticalAlign:"top"},
+  badge:(c)=>{const m={green:[C.accentBg,C.accentLight],gold:[C.goldBg,C.gold],gray:[C.bg3,C.text3],red:[C.redBg,"#ff6e6a"],blue:[C.blueBg,C.blue],purple:[C.purpleBg,"#b392f0"]};const[bg,fg]=m[c]||m.gray;return{background:bg,color:fg,padding:"2px 8px",borderRadius:3,fontSize:10,fontWeight:600,fontFamily:"monospace",display:"inline-block",border:`1px solid ${fg}33`}},
+  callout:(c)=>{const m={green:[C.accentBg,C.accentBorder],gold:[C.goldBg,C.goldBorder],red:[C.redBg,C.redBorder],blue:[C.blueBg,C.blueBorder]};const[bg,bdr]=m[c]||m.green;return{background:bg,borderLeft:`3px solid ${bdr}`,borderRadius:"0 4px 4px 0",padding:"9px 13px",marginBottom:10,fontSize:12,color:C.text2,lineHeight:1.7}},
+  divider:{borderTop:`1px solid ${C.border}`,margin:"14px 0"},
+  mono:{fontFamily:"monospace",fontSize:11.5},
+  modal:{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:999,padding:20},
+  modalBox:{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:0,maxWidth:520,width:"100%",maxHeight:"90vh",overflowY:"auto"},
+};
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+const F = ({label,value,onChange,placeholder,type,hint})=>(
+  <div style={{marginBottom:label?8:0}}>
+    {label&&<label style={S.label}>{label}{hint&&<span style={{color:C.blue,marginLeft:6,fontSize:9,fontFamily:"monospace",textTransform:"none",letterSpacing:0}}>{hint}</span>}</label>}
+    <input style={S.input} value={value||""} onChange={onChange} placeholder={placeholder||""} type={type||"text"}/>
+  </div>
+);
+const Sel = ({label,value,onChange,children,hint})=>(
+  <div style={{marginBottom:label?8:0}}>
+    {label&&<label style={S.label}>{label}{hint&&<span style={{color:C.blue,marginLeft:6,fontSize:9,fontFamily:"monospace",textTransform:"none",letterSpacing:0}}>{hint}</span>}</label>}
+    <select style={S.select} value={value||""} onChange={onChange}>{children}</select>
+  </div>
+);
+const SectionTitle = ({num,title,sub})=>(
+  <div style={{display:"flex",alignItems:"baseline",gap:10,marginBottom:16}}>
+    <span style={{...S.badge("green"),fontSize:9}}>{num}</span>
+    <div>
+      <div style={{fontSize:16,fontWeight:600,color:C.text,fontFamily:"'Playfair Display',Georgia,serif",letterSpacing:"-0.02em"}}>{title}</div>
+      {sub&&<div style={{fontSize:11,color:C.text2,marginTop:2}}>{sub}</div>}
+    </div>
+  </div>
+);
+// ─── MAIN APP ────────────────────────────────────────────────────────────────
+export default function App(){
+  const [projects,setProjects]=useState([]);
+  const [activeId,setActiveId]=useState(null);
+  const [tab,setTab]=useState("info");
+  const [loinDisc,setLoinDisc]=useState(Object.keys(LOIN_CATS)[0]);
+  const [loinView,setLoinView]=useState("nivel"); // "nivel" | "atributos" | "ifc" | "params"
+  const [saved,setSaved]=useState(false);
+  const [loading,setLoading]=useState(true);
+  const [confirmDel,setConfirmDel]=useState(null);
+  const [sideCollapsed,setSideCollapsed]=useState(false);
+  const [exportModal,setExportModal]=useState(false);
+
+  useEffect(()=>{
+    loadData("peb:projects").then(p=>{
+      if(p&&p.length){
+        // Migração: preencher campos novos em projetos antigos
+        const migrated = p.map(proj=>({
+          ...proj,
+          psets: proj.psets || [],
+          equipeCols: proj.equipeCols || ["sigla","disciplina","formato","empresa","contato","email","software","versao"],
+          entregaveis: proj.entregaveis || DEFAULT_ENTREGAVEIS.map((n)=>({nome:n, marcas:{}})),
+          raci: proj.raci || JSON.parse(JSON.stringify(DEFAULT_RACI)),
+          loinIfc: proj.loinIfc || {},
+        }));
+        setProjects(migrated);
+        setActiveId(migrated[0].id);
+      }
+      setLoading(false);
+    });
+  },[]);
+
+  useEffect(()=>{
+    if(!loading){saveData("peb:projects",projects);setSaved(true);setTimeout(()=>setSaved(false),1200);}
+  },[projects,loading]);
+
+  const proj = projects.find(p=>p.id===activeId);
+  const upd = useCallback((u)=>setProjects(prev=>prev.map(p=>p.id===activeId?{...p,...u}:p)),[activeId]);
+
+  const addProj = ()=>{
+    const id=Date.now().toString();
+    const np={...JSON.parse(JSON.stringify(DEFAULT_PROJECT)),id,numero:(projects.length+1).toString().padStart(4,"0")};
+    setProjects(prev=>[...prev,np]);setActiveId(id);setTab("info");
+  };
+  const delProj = (id)=>{setProjects(prev=>prev.filter(p=>p.id!==id));setActiveId(p=>p===id?(projects.find(x=>x.id!==id)?.id||null):p);setConfirmDel(null);};
+  const dupProj = (id)=>{const s=projects.find(p=>p.id===id);if(!s)return;const np={...JSON.parse(JSON.stringify(s)),id:Date.now().toString(),nome:s.nome+" (cópia)"};setProjects(prev=>[...prev,np]);setActiveId(np.id);};
+
+  const TABS=[
+    ["info","Projeto"],["equipes","Equipes"],["fases","Fases/CDE"],
+    ["loin","Matriz LOIN"],["psets","PSets"],["setores","Setorização"],["coordenadas","Coordenadas"],
+    ["ifc","Export. IFC"],["bcf","BCF/Colaboração"],["cores","Cores MEP"],
+    ["qualidade","Qualidade"],["niveis","Níveis"],["guia","Guia ISO 19650"],
+  ];
+
+  if(loading)return(
+    <div style={{...S.app,alignItems:"center",justifyContent:"center",gap:12}}>
+      <div style={{width:32,height:32,border:`2px solid ${C.accentLight}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+      <span style={{color:C.text2,fontFamily:"monospace",fontSize:12}}>Carregando dados…</span>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+
+  return(
+    <div style={S.app}>
+      <style>{`
+        *{box-sizing:border-box;margin:0;padding:0}
+        ::-webkit-scrollbar{width:5px;height:5px}
+        ::-webkit-scrollbar-track{background:${C.bg}}
+        ::-webkit-scrollbar-thumb{background:${C.border};border-radius:3px}
+        input:focus,select:focus,textarea:focus{outline:1px solid ${C.accentLight}!important;}
+        table tr:hover td{background:${C.bg3}!important;}
+        @media print { @page { size: A4; margin: 15mm; } }
+      `}</style>
+
+      {/* TOPBAR */}
+      <div style={S.topbar}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <button style={{...S.btn("icon"),padding:"4px 8px",fontSize:14}} onClick={()=>setSideCollapsed(v=>!v)}>☰</button>
+          <span style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:16,fontWeight:700,color:C.text}}>PEB Manager</span>
+          <span style={{fontSize:9,color:C.accentLight,fontFamily:"monospace",letterSpacing:"0.1em",textTransform:"uppercase",background:C.accentBg,padding:"2px 7px",borderRadius:3,border:`1px solid ${C.accentBorder}`}}>ISO 19650 · LOIN · BCF</span>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          {saved&&<span style={{fontSize:10,color:C.accentLight,fontFamily:"monospace",animation:"fadeIn 0.2s"}}>✓ Salvo automaticamente</span>}
+          {proj&&<button style={{...S.btn("primary"),fontSize:11}} onClick={()=>setExportModal(true)}>📄 Exportar Relatório</button>}
+          <span style={{fontSize:10,color:C.text3,fontFamily:"monospace"}}>{projects.length} projeto{projects.length!==1?"s":""}</span>
+        </div>
+      </div>
+
+      <div style={S.body}>
+        {/* SIDEBAR */}
+        {!sideCollapsed&&(
+          <div style={S.sidebar}>
+            <div style={{padding:"12px 12px 8px",borderBottom:`1px solid ${C.border}`}}>
+              <div style={{fontSize:9,letterSpacing:"0.12em",textTransform:"uppercase",color:C.text3,fontFamily:"monospace",marginBottom:8}}>Projetos</div>
+              <button style={{...S.btn("primary"),width:"100%",fontSize:12}} onClick={addProj}>+ Novo Projeto</button>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:"8px"}}>
+              {projects.length===0&&<div style={{color:C.text3,fontSize:11,padding:12,textAlign:"center"}}>Nenhum projeto.<br/>Clique em "+ Novo Projeto".</div>}
+              {projects.map(p=>(
+                <div key={p.id} onClick={()=>{setActiveId(p.id);setTab("info");}}
+                  style={{padding:"9px 11px",borderRadius:5,cursor:"pointer",marginBottom:4,background:p.id===activeId?C.accentBg:"transparent",border:`1px solid ${p.id===activeId?C.accentBorder:C.border}`,transition:"all 0.15s"}}>
+                  <div style={{fontSize:12.5,fontWeight:600,color:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.nome||"Sem nome"}</div>
+                  <div style={{fontSize:9.5,color:C.text3,marginTop:2,fontFamily:"monospace"}}>{p.numero||"—"} · {p.cliente||"—"}</div>
+                </div>
+              ))}
+            </div>
+            {proj&&(
+              <div style={{padding:"10px 10px",borderTop:`1px solid ${C.border}`,display:"flex",gap:5}}>
+                <button style={{...S.btn("ghost"),flex:1,fontSize:10.5}} onClick={()=>dupProj(activeId)}>Duplicar</button>
+                <button style={{...S.btn("danger"),flex:1,fontSize:10.5}} onClick={()=>setConfirmDel(activeId)}>Excluir</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* MAIN */}
+        <div style={S.main}>
+          {!proj?(
+            <div style={{...S.mainContent,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14}}>
+              <div style={{fontSize:40,color:C.border}}>⬡</div>
+              <div style={{color:C.text2,fontSize:13}}>Selecione ou crie um projeto para começar</div>
+              <button style={S.btn("primary")} onClick={addProj}>+ Criar Primeiro Projeto</button>
+            </div>
+          ):(
+            <>
+              {/* Project Header */}
+              <div style={{background:C.bg2,borderBottom:`1px solid ${C.border}`,padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+                <div>
+                  <div style={{fontSize:15,fontWeight:700,color:C.text,fontFamily:"'Playfair Display',Georgia,serif"}}>{proj.nome||"Sem nome"}</div>
+                  <div style={{fontSize:9.5,color:C.text3,fontFamily:"monospace",marginTop:2,display:"flex",gap:12}}>
+                    <span>{proj.numero||"—"}</span>
+                    {proj.codigo&&<span>COD: {proj.codigo}</span>}
+                    {proj.cliente&&<span>CLIENTE: {proj.cliente}</span>}
+                    <span>REV: {proj.revisao||"R00"}</span>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:5,alignItems:"center",flexWrap:"wrap"}}>
+                  {proj.cidade&&<span style={S.badge("gray")}>{proj.cidade}</span>}
+                  <span style={S.badge("green")}>ND {proj.lod||"350"}</span>
+                  <span style={S.badge("blue")}>{proj.datum||"SIRGAS 2000"}</span>
+                  {proj.tipologia&&<span style={S.badge("purple")}>{proj.tipologia}</span>}
+                </div>
+              </div>
+
+              {/* Tab bar */}
+              <div style={{background:C.bg2,borderBottom:`1px solid ${C.border}`,padding:"0 20px",flexShrink:0,overflowX:"auto"}}>
+                <div style={{display:"flex",gap:0,whiteSpace:"nowrap"}}>
+                  {TABS.map(([k,l])=>(
+                    <button key={k} onClick={()=>setTab(k)} style={{background:"transparent",border:"none",borderBottom:`2px solid ${tab===k?C.accentLight:"transparent"}`,padding:"10px 13px",cursor:"pointer",fontSize:12,color:tab===k?C.accentLight:C.text2,fontWeight:tab===k?600:400,fontFamily:"'IBM Plex Sans',sans-serif",transition:"all .15s",whiteSpace:"nowrap"}}>{l}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={S.mainContent}>
+                {tab==="info"&&<TabInfo p={proj} upd={upd}/>}
+                {tab==="equipes"&&<TabEquipes p={proj} upd={upd}/>}
+                {tab==="fases"&&<TabFases p={proj} upd={upd}/>}
+                {tab==="loin"&&<TabLoin p={proj} upd={upd} disc={loinDisc} setDisc={setLoinDisc} view={loinView} setView={setLoinView}/>}
+                {tab==="psets"&&<TabPsets p={proj} upd={upd}/>}
+                {tab==="setores"&&<TabSetores p={proj} upd={upd}/>}
+                {tab==="coordenadas"&&<TabCoordenadas p={proj} upd={upd}/>}
+                {tab==="ifc"&&<TabIfc p={proj} upd={upd}/>}
+                {tab==="bcf"&&<TabBcf p={proj} upd={upd}/>}
+                {tab==="cores"&&<TabCores/>}
+                {tab==="qualidade"&&<TabQualidade p={proj}/>}
+                {tab==="niveis"&&<TabNiveis p={proj} upd={upd}/>}
+                {tab==="guia"&&<TabGuiaIso/>}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {confirmDel&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:999}}>
+          <div style={{background:C.bg2,border:`1px solid ${C.redBorder}`,borderRadius:8,padding:22,maxWidth:360,width:"90%"}}>
+            <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:8}}>Excluir projeto?</div>
+            <div style={{fontSize:12,color:C.text2,marginBottom:18}}>Essa ação não pode ser desfeita.</div>
+            <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+              <button style={S.btn("ghost")} onClick={()=>setConfirmDel(null)}>Cancelar</button>
+              <button style={S.btn("danger")} onClick={()=>delProj(confirmDel)}>Excluir Projeto</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {exportModal && proj && <ExportModal p={proj} onClose={()=>setExportModal(false)}/>}
+    </div>
+  );
+}
+
+// ─── TAB: INFO ───────────────────────────────────────────────────────────────
+function TabInfo({p,upd}){
+  const f=(k)=>(e)=>upd({[k]:e.target.value});
+  return(
+    <div>
+      <SectionTitle num="§2" title="Identificação e Dados do Projeto" sub="Informações básicas do empreendimento conforme EIR/OIR — ISO 19650-1 §5.3"/>
+      <div style={S.card}>
+        <div style={S.cardTitle}>Identificação do Projeto</div>
+        <div style={S.grid3}>
+          <F label="Nome do Projeto" hint="Deve ser único e rastreável" value={p.nome} onChange={f("nome")}/>
+          <F label="Código do Projeto" hint="Ex: BAR, CAN" value={p.codigo} onChange={f("codigo")} placeholder="CAN"/>
+          <F label="Número do Projeto" value={p.numero} onChange={f("numero")} placeholder="5232"/>
+        </div>
+        <div style={S.grid3}>
+          <Sel label="Tipo de Projeto" value={p.tipo} onChange={f("tipo")}>
+            {["Edifício Residencial","Edifício Comercial","Residencial/Comercial","Uso Misto","Institucional","Industrial","Infraestrutura","Reforma"].map(t=><option key={t}>{t}</option>)}
+          </Sel>
+          <Sel label="Tipologia" value={p.tipologia} onChange={f("tipologia")}>
+            {["","Residencial | Vertical","Residencial | Horizontal","Comercial | Vertical","Residencial/Comercial | Vertical","Institucional","Misto"].map(t=><option key={t}>{t}</option>)}
+          </Sel>
+          <F label="Certificação Ambiental" value={p.certificacaoAmbiental} onChange={f("certificacaoAmbiental")} placeholder="LEED, AQUA, PROCEL…"/>
+        </div>
+        <div style={S.grid2}>
+          <F label="Endereço Completo" hint="Logradouro, número, CEP" value={p.enderecoCompleto} onChange={f("enderecoCompleto")}/>
+          <div style={S.grid2}>
+            <F label="Cidade" value={p.cidade} onChange={f("cidade")} placeholder="São Paulo"/>
+            <F label="Estado" value={p.estado} onChange={f("estado")} placeholder="SP"/>
+          </div>
+        </div>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Dados do Cliente e Contato — EIR §5.1</div>
+        <div style={S.grid3}>
+          <F label="Cliente / Contratante" hint="Quem define os requisitos (OIR/EIR)" value={p.cliente} onChange={f("cliente")}/>
+          <F label="Departamento" value={p.departamento} onChange={f("departamento")} placeholder="Engenharia"/>
+          <F label="E-mail do Cliente" value={p.emailCliente} onChange={f("emailCliente")} type="email"/>
+        </div>
+        <div style={S.grid3}>
+          <F label="Telefone" value={p.telefoneCliente} onChange={f("telefoneCliente")}/>
+          <F label="Coordenador BIM (LAP)" hint="Lead Appointed Party — ISO 19650-2 §5.4.1" value={p.coordenador} onChange={f("coordenador")}/>
+          <div style={S.grid2}>
+            <F label="Revisão" value={p.revisao} onChange={f("revisao")} placeholder="R00"/>
+            <F label="Data de Emissão" value={p.data} onChange={f("data")} type="date"/>
+          </div>
+        </div>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Métricas e Dimensões do Empreendimento</div>
+        <div style={S.grid4}>
+          <F label="Área Construída (m²)" value={p.areaConstruida} onChange={f("areaConstruida")}/>
+          <F label="Área do Terreno (m²)" value={p.areaTerreno} onChange={f("areaTerreno")}/>
+          <F label="Nº de Pavimentos" value={p.numPavimentos} onChange={f("numPavimentos")}/>
+          <F label="Nº de Unidades" value={p.numUnidades} onChange={f("numUnidades")}/>
+        </div>
+        <div style={S.grid3}>
+          <F label="Data de Início" value={p.dataInicio} onChange={f("dataInicio")} type="date"/>
+          <Sel label="ND Padrão do Projeto" hint="Nível de Desenvolvimento base" value={p.lod} onChange={f("lod")}>
+            {["100","200","300","350","400","500"].map(l=><option key={l} value={l}>ND {l}</option>)}
+          </Sel>
+          <Sel label="Model View Definition (MVD)" hint="Esquema IFC para exportação" value={p.mvd} onChange={f("mvd")}>
+            {["IFC4 – Reference View","IFC4 – Design Transfer View","IFC2x3 Coordination View 2.0","IFC4x3"].map(m=><option key={m} value={m}>{m}</option>)}
+          </Sel>
+        </div>
+        <div style={S.grid2}>
+          <F label="Repositório de Arquivos (CDE)" hint="Autodoc, ACC, BIM 360…" value={p.repositorio} onChange={f("repositorio")} placeholder="Autodoc"/>
+          <F label="Plataforma de Colaboração" hint="Construflow, BIMcollab, Navisworks…" value={p.cde} onChange={f("cde")} placeholder="Construflow"/>
+        </div>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Referências do Documento</div>
+        <div style={S.grid2}>
+          <F label="Referência do PEB" hint="Padrão: XXXX-COO-EP-000-PEB-RXX" value={p.refArquivo} onChange={f("refArquivo")} placeholder="5232-COO-EP-000-PEB-R00"/>
+          <F label="Template RVT / Arquivo Base" hint="Arquivo de coordenadas e níveis de referência" value={p.templateRvt} onChange={f("templateRvt")} placeholder="5232-COO-EP-007-PEB-R03"/>
+        </div>
+        <F label="Property Set IFC (Pset)" hint="Nome do conjunto de parâmetros no arquivo IFC — Ex: IFC LINDENBERG" value={p.psetName} onChange={f("psetName")} placeholder="IFC LINDENBERG"/>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Usos do BIM — Contratados para este Projeto</div>
+        <div style={{...S.callout("blue"),fontSize:11}}>
+          <strong style={{display:"block",marginBottom:4,fontSize:10,fontFamily:"monospace",letterSpacing:"0.06em",textTransform:"uppercase"}}>ISO 19650-1 §5.2 — Propósito da Informação</strong>
+          Defina claramente quais usos BIM estão contratados. Isso determina o LoIN (Nível de Informação Necessária) em cada fase e disciplina.
+        </div>
+        <div style={{fontSize:10,color:C.text2,fontFamily:"monospace",marginBottom:8,letterSpacing:"0.06em",textTransform:"uppercase"}}>Projeto</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:7,marginBottom:14}}>
+          {[["concepcao","Concepção / Design Autoral"],["documentacao","Documentação 2D/3D"],["visualizacao","Visualização / Renders"],["compatibilizacao","Compatibilização Interdisciplinar"],["coordenacao","Coordenação de Projetos"],["sustentabilidade","Sustentabilidade / Simulações"],["analises","Análises de Engenharia"],["quantitativos","Extração de Quantitativos"]].map(([k,l])=>(
+            <label key={k} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:p.usosBim?.[k]?C.accentLight:C.text3}}>
+              <input type="checkbox" checked={!!p.usosBim?.[k]} style={{accentColor:C.accent}} onChange={e=>upd({usosBim:{...p.usosBim,[k]:e.target.checked}})}/>
+              {l}
+            </label>
+          ))}
+        </div>
+        <div style={{fontSize:10,color:C.text2,fontFamily:"monospace",marginBottom:8,letterSpacing:"0.06em",textTransform:"uppercase"}}>Construção / Operação</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:7}}>
+          {[["canteiro","Logística Canteiro 4D"],["planejamento4d","Planejamento 4D"],["coordenacao3d","Coordenação 3D"],["fabricacao","Fabricação Digital"],["custos5d","Gestão Custos 5D"],["mockups","Mock-ups Virtuais"],["manutencao","Manutenção Preventiva FM"],["analisesSis","Análise dos Sistemas"],["gestao","Gestão do Edifício (FM)"],["asbuilt","Modelo As-Built (AIM)"]].map(([k,l])=>(
+            <label key={k} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:p.usosBim?.[k]?C.accentLight:C.text3}}>
+              <input type="checkbox" checked={!!p.usosBim?.[k]} style={{accentColor:C.accent}} onChange={e=>upd({usosBim:{...p.usosBim,[k]:e.target.checked}})}/>
+              {l}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Notas / OIR — Requisitos Organizacionais</div>
+        <div style={{...S.callout("gold"),fontSize:11}}>
+          <strong style={{fontSize:10,fontFamily:"monospace",letterSpacing:"0.06em",textTransform:"uppercase",display:"block",marginBottom:4}}>ISO 19650-1 §5.3 — OIR (Organizational Information Requirements)</strong>
+          Registre aqui os requisitos estratégicos da organização, propósitos de uso da informação por ponto de decisão (PCD), normas aplicáveis e observações gerais sobre a gestão da informação deste empreendimento.
+        </div>
+        <textarea style={S.textarea} value={p.notas||""} onChange={e=>upd({notas:e.target.value})} placeholder="Descreva os objetivos estratégicos, requisitos do cliente (OIR/EIR), normas aplicáveis, pontos-chave de decisão (PCD) e outras observações relevantes…"/>
+      </div>
+    </div>
+  );
+}
+
+// ─── TAB: EQUIPES (com colunas editáveis, slots maiores, RACI dinâmica) ─────
+const ALL_EQ_COLS = [
+  {k:"sigla", l:"Sigla", width:70},
+  {k:"disciplina", l:"Disciplina", width:200},
+  {k:"formato", l:"Formato", width:90},
+  {k:"empresa", l:"Empresa", width:160},
+  {k:"contato", l:"Contato", width:200},
+  {k:"email", l:"Email", width:240},
+  {k:"software", l:"Software", width:120},
+  {k:"versao", l:"Versão", width:90},
+  {k:"telefone", l:"Telefone", width:140},
+  {k:"papel", l:"Papel (LAP/AP)", width:120},
+];
+
+function TabEquipes({p,upd}){
+  const eq=p.equipes||[];
+  const cols = p.equipeCols || ALL_EQ_COLS.slice(0,8).map(c=>c.k);
+  const [colPicker, setColPicker] = useState(false);
+  const [raciDisc, setRaciDisc] = useState(null); // disciplina expandida
+
+  const addEq=()=>upd({equipes:[...eq,{sigla:"",disciplina:"",formato:"2D/3D",empresa:"",contato:"",email:"",software:"",versao:""}]});
+  const delEq=(i)=>upd({equipes:eq.filter((_,x)=>x!==i)});
+  const upEq=(i,k,v)=>upd({equipes:eq.map((e,x)=>x===i?{...e,[k]:v}:e)});
+
+  const toggleCol = (k) => {
+    const newCols = cols.includes(k) ? cols.filter(c=>c!==k) : [...cols, k];
+    if (newCols.length === 0) return; // nunca remover todas
+    upd({equipeCols: newCols});
+  };
+
+  const raci = p.raci || DEFAULT_RACI;
+  const setRaciVal = (disc, atividade, val) => {
+    upd({raci: {...raci, [disc]: {...(raci[disc]||{}), [atividade]: val}}});
+  };
+
+  // Siglas disponíveis para RACI = equipes cadastradas + CLIENTE + COO
+  const raciDisciplinas = [...new Set([
+    "CLIENTE","COO",
+    ...eq.map(e=>e.sigla).filter(Boolean),
+  ])];
+
+  return(
+    <div>
+      <SectionTitle num="§4" title="Equipes de Trabalho" sub="ISO 19650-2 §5.4 — Appointed Parties e Task Teams"/>
+      <div style={S.card}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
+          <div style={S.cardTitle}>Disciplinas e Responsáveis — TIDP por Equipe</div>
+          <div style={{display:"flex",gap:6}}>
+            <button style={S.btn("ghost")} onClick={()=>setColPicker(v=>!v)}>⚙ Colunas</button>
+            <button style={S.btn("primary")} onClick={addEq}>+ Adicionar</button>
+          </div>
+        </div>
+
+        {colPicker && (
+          <div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:5,padding:"10px 12px",marginBottom:10}}>
+            <div style={{fontSize:10,color:C.text2,fontFamily:"monospace",marginBottom:8,letterSpacing:"0.06em",textTransform:"uppercase"}}>Colunas visíveis (mín. 1)</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:6}}>
+              {ALL_EQ_COLS.map(col=>(
+                <label key={col.k} style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontSize:12,color:cols.includes(col.k)?C.accentLight:C.text3}}>
+                  <input type="checkbox" checked={cols.includes(col.k)} style={{accentColor:C.accent}} onChange={()=>toggleCol(col.k)}/>
+                  {col.l}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div style={{...S.callout("blue"),fontSize:11}}>
+          <strong style={{fontSize:10,fontFamily:"monospace",display:"block",marginBottom:3}}>ISO 19650-2 §5.4.3 — EIR Downstream (Cascade)</strong>
+          Cada disciplina constitui uma Task Team. A contratada líder (LAP) estabelece os EIRs downstream para cada subcontratada. Repositório: <strong>{p.repositorio||"—"}</strong> · CDE: <strong>{p.cde||"—"}</strong>
+        </div>
+        <div style={{overflowX:"auto"}}>
+          <table style={S.table}>
+            <thead><tr>
+              {cols.map(ck=>{
+                const col = ALL_EQ_COLS.find(c=>c.k===ck);
+                return <th key={ck} style={S.th}>{col?.l||ck}</th>;
+              })}
+              <th style={S.th}></th>
+            </tr></thead>
+            <tbody>
+              {eq.map((e,i)=>(
+                <tr key={i}>
+                  {cols.map(ck=>{
+                    const col = ALL_EQ_COLS.find(c=>c.k===ck);
+                    const isMulti = ck==="contato"||ck==="email"||ck==="telefone";
+                    return (
+                      <td key={ck} style={S.td}>
+                        {isMulti ? (
+                          <textarea
+                            style={{...S.textarea, minWidth: col?.width||140, minHeight:56, fontSize:11.5, padding:"5px 8px"}}
+                            value={e[ck]||""}
+                            onChange={ev=>upEq(i,ck,ev.target.value)}
+                            placeholder={ck==="email"?"joao@a.com\nmaria@a.com":""}
+                          />
+                        ) : (
+                          <input
+                            style={{...S.input, minWidth: col?.width||90}}
+                            value={e[ck]||""}
+                            onChange={ev=>upEq(i,ck,ev.target.value)}
+                          />
+                        )}
+                      </td>
+                    );
+                  })}
+                  <td style={S.td}><button style={S.btn("danger")} onClick={()=>delEq(i)}>✕</button></td>
+                </tr>
+              ))}
+              {eq.length===0&&<tr><td colSpan={cols.length+1} style={{...S.td,textAlign:"center",padding:20,color:C.text3}}>Nenhuma equipe cadastrada</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <div style={{marginTop:8,fontSize:10,color:C.text3,fontFamily:"monospace"}}>
+          Campos "Contato", "Email" e "Telefone" aceitam múltiplas linhas (1 contato por linha).
+        </div>
+      </div>
+
+      {/* RACI DINÂMICA — clicável, com detalhes por célula */}
+      <div style={S.card}>
+        <div style={S.cardTitle}>Matriz RACI Dinâmica — ISO 19650-2 Tabela A.1</div>
+        <div style={{...S.callout("green"),fontSize:11}}>
+          <strong style={{fontSize:10,fontFamily:"monospace",display:"block",marginBottom:3}}>Como usar</strong>
+          Baseado na Tabela A.1 da ABNT NBR ISO 19650-2:2022. Clique em qualquer linha para ver detalhes da atividade. Clique em qualquer célula para alterar: <strong style={{color:C.accentLight}}>R</strong>=Responsável · <strong style={{color:C.gold}}>A</strong>=Aprovador · <strong style={{color:C.blue}}>C</strong>=Consultado · <strong style={{color:C.text2}}>I</strong>=Informado · <strong style={{color:C.text3}}>—</strong>=N/A
+        </div>
+        <div style={{overflowX:"auto"}}>
+          <table style={S.table}>
+            <thead>
+              <tr>
+                <th style={{...S.th,minWidth:260}}>Atividade / Fase</th>
+                <th style={{...S.th,minWidth:60,textAlign:"center"}}>Seção</th>
+                {raciDisciplinas.map(d=><th key={d} style={{...S.th,textAlign:"center",minWidth:70}}>{d}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {RACI_ATIVIDADES.map(at=>(
+                <RaciRow key={at.id} at={at} raciDisciplinas={raciDisciplinas} raci={raci} setRaciVal={setRaciVal} raciDisc={raciDisc} setRaciDisc={setRaciDisc}/>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// RaciRow — linha expansível da matriz RACI
+function RaciRow({at, raciDisciplinas, raci, setRaciVal, raciDisc, setRaciDisc}){
+  return (
+    <>
+                  <tr>
+                    <td style={{...S.td,fontWeight:500,color:C.text,cursor:"pointer"}} onClick={()=>setRaciDisc(raciDisc===at.id?null:at.id)}>
+                      <span style={{marginRight:8,color:C.text3,fontFamily:"monospace",fontSize:10}}>{raciDisc===at.id?"▼":"▶"}</span>
+                      {at.ativ}
+                    </td>
+                    <td style={{...S.td,textAlign:"center",fontFamily:"monospace",fontSize:10,color:C.text3}}>{at.sec}</td>
+                    {raciDisciplinas.map(d=>{
+                      const v = raci[d]?.[at.id] || "";
+                      const vhas = (c)=>v.includes(c);
+                      const bg = vhas("R")?C.accentBg:vhas("A")?C.goldBg:vhas("C")?C.blueBg:vhas("I")?C.bg3:"transparent";
+                      const fg = vhas("R")?C.accentLight:vhas("A")?C.gold:vhas("C")?C.blue:vhas("I")?C.text2:C.text3;
+                      return (
+                        <td key={d} style={{...S.td,textAlign:"center",padding:"4px 6px"}}>
+                          <select
+                            value={v}
+                            onChange={(e)=>setRaciVal(d, at.id, e.target.value)}
+                            style={{...S.select, width:66, fontSize:10.5, padding:"3px 4px", textAlign:"center",
+                                    background:bg, color:fg, border:`1px solid ${fg}55`, fontWeight:700, fontFamily:"monospace"}}
+                          >
+                            <option value="">—</option>
+                            <option value="R">R</option>
+                            <option value="A">A</option>
+                            <option value="C">C</option>
+                            <option value="I">I</option>
+                            <option value="A/R">A/R</option>
+                            <option value="R/A">R/A</option>
+                            <option value="A/C">A/C</option>
+                            <option value="R/C">R/C</option>
+                          </select>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  {raciDisc===at.id && (
+                    <tr>
+                      <td colSpan={raciDisciplinas.length+2} style={{...S.td,background:C.bg,padding:"12px 18px",borderLeft:`3px solid ${C.accentBorder}`}}>
+                        <div style={{fontSize:11.5,color:C.text,lineHeight:1.7}}>
+                          <div style={{fontSize:10,color:C.accentLight,fontFamily:"monospace",textTransform:"uppercase",marginBottom:6,letterSpacing:"0.08em"}}>{at.sec} · {at.ativ}</div>
+                          {at.desc}
+                        </div>
+                        <div style={{marginTop:10,padding:"8px 10px",background:C.bg3,borderRadius:4,fontSize:11,color:C.text2}}>
+                          <strong style={{color:C.text,fontSize:10,fontFamily:"monospace",textTransform:"uppercase",letterSpacing:"0.08em"}}>Responsáveis neste projeto:</strong>
+                          <div style={{marginTop:4,display:"flex",flexWrap:"wrap",gap:8}}>
+                            {raciDisciplinas.map(d=>{
+                              const v = raci[d]?.[at.id];
+                              if (!v) return null;
+                              const vhas = (c)=>v.includes(c);
+                              const fg = vhas("R")?C.accentLight:vhas("A")?C.gold:vhas("C")?C.blue:C.text2;
+                              return <span key={d} style={{fontFamily:"monospace",fontSize:11,color:fg}}>{d}: <strong>{v}</strong></span>;
+                            })}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+    </>
+  );
+}
+
+// ─── TAB: FASES (com entregáveis editáveis e sincronizados) ─────────────────
+function TabFases({p,upd}){
+  const fs=p.fases||[];
+  const entregaveis = p.entregaveis || [];
+
+  const addF=()=>upd({fases:[...fs,{fase:"Nova Fase",inicio:"",meses:"",entregaveis:"",status:"Previsto"}]});
+  const delF=(i)=>upd({fases:fs.filter((_,x)=>x!==i)});
+  const upF=(i,k,v)=>upd({fases:fs.map((f,x)=>x===i?{...f,[k]:v}:f)});
+
+  const addEnt=()=>upd({entregaveis:[...entregaveis,{nome:"Novo entregável",marcas:{}}]});
+  const delEnt=(i)=>upd({entregaveis:entregaveis.filter((_,x)=>x!==i)});
+  const upEntName=(i,v)=>upd({entregaveis:entregaveis.map((e,x)=>x===i?{...e,nome:v}:e)});
+  const toggleMarca=(entIdx, faseIdx)=>{
+    upd({entregaveis:entregaveis.map((e,x)=>x===entIdx?{...e, marcas:{...(e.marcas||{}),[faseIdx]:!(e.marcas?.[faseIdx])}}:e)});
+  };
+
+  return(
+    <div>
+      <SectionTitle num="§2.2" title="Fases do Ciclo de Vida / CDE" sub="ISO 19650-2 §5.1 a §5.8 — Pontos-Chave de Decisão (PCD)"/>
+      <div style={S.card}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={S.cardTitle}>Cronograma de Fases — Marcos de Entrega da Informação (§5.1.3)</div>
+          <button style={S.btn("primary")} onClick={addF}>+ Fase</button>
+        </div>
+        <div style={{...S.callout("gold"),fontSize:11}}>
+          <strong style={{fontSize:10,fontFamily:"monospace",display:"block",marginBottom:3}}>§5.1.3 — Datas-Marco de Entrega da Informação (DMI)</strong>
+          A contratante deve definir os marcos alinhados ao plano de trabalho, incluindo pontos-chave de decisão (PCD) e tempo suficiente para revisão e aceite da informação. As datas podem sofrer alterações conforme emissão inicial do cronograma.
+        </div>
+        <div style={{overflowX:"auto"}}>
+          <table style={S.table}>
+            <thead><tr><th style={S.th}>Fase</th><th style={S.th}>Início</th><th style={S.th}>Duração</th><th style={{...S.th,minWidth:220}}>Entregáveis BIM</th><th style={S.th}>Status</th><th style={S.th}></th></tr></thead>
+            <tbody>
+              {fs.map((f,i)=>(
+                <tr key={i}>
+                  <td style={S.td}><input style={{...S.input,minWidth:150}} value={f.fase||""} onChange={e=>upF(i,"fase",e.target.value)}/></td>
+                  <td style={S.td}><input style={{...S.input,width:110}} value={f.inicio||""} onChange={e=>upF(i,"inicio",e.target.value)} type="date"/></td>
+                  <td style={S.td}><input style={{...S.input,width:70}} value={f.meses||""} onChange={e=>upF(i,"meses",e.target.value)} placeholder="meses"/></td>
+                  <td style={S.td}><input style={{...S.input,minWidth:220}} value={f.entregaveis||""} onChange={e=>upF(i,"entregaveis",e.target.value)}/></td>
+                  <td style={S.td}>
+                    <select style={{...S.select,width:110}} value={f.status||"Previsto"} onChange={e=>upF(i,"status",e.target.value)}>
+                      {["Previsto","Em andamento","Concluído","Atrasado","Bloqueado"].map(s=><option key={s}>{s}</option>)}
+                    </select>
+                  </td>
+                  <td style={S.td}><button style={S.btn("danger")} onClick={()=>delF(i)}>✕</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Estados CDE — §5.1.7 / ISO 19650-2</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
+          {[["S0 – WIP",`Trabalho em andamento. Acesso restrito ao autor e BIM Manager. Nenhum modelo entra em produção antes dos testes de workflow serem aprovados.`,"gray"],["S1 – Shared",`Compartilhado para revisão e coordenação interdisciplinar. Requisito: sem blockers críticos.`,"gold"],["S2 – Published",`Publicado. Gate aprovado. Versão oficial aprovada pelo workflow de validação. Zero blockers IDS.`,"green"],["S5 – Archived",`Arquivado. Versão superada por nova publicação. Apenas consulta histórica — somente leitura.`,"blue"]].map(([e,d,c])=>(
+            <div key={e} style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:5,padding:12}}>
+              <div style={S.badge(c)}>{e}</div>
+              <div style={{fontSize:11,color:C.text2,marginTop:8,lineHeight:1.6}}>{d}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ENTREGÁVEIS OBRIGATÓRIOS POR ETAPA — dinâmico, sincronizado com fases */}
+      <div style={S.card}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
+          <div style={S.cardTitle}>Entregáveis Obrigatórios por Etapa</div>
+          <button style={S.btn("primary")} onClick={addEnt}>+ Entregável</button>
+        </div>
+        <div style={{...S.callout("red"),fontSize:11}}>
+          <strong style={{fontSize:10,fontFamily:"monospace",display:"block",marginBottom:3}}>OBRIGAÇÃO — §6.5</strong>
+          A documentação SERÁ EXTRAÍDA A PARTIR DOS MODELOS BIM de todas as especialidades. Não serão aceitas documentações 2D diferentes do modelo 3D. Clique em cada slot para marcar/desmarcar. As colunas sincronizam automaticamente com as <strong>{fs.length} fase{fs.length!==1?"s":""}</strong> cadastradas acima.
+        </div>
+        <div style={{overflowX:"auto"}}>
+          <table style={S.table}>
+            <thead>
+              <tr>
+                <th style={{...S.th,minWidth:260}}>Entregável</th>
+                {fs.map((f,i)=><th key={i} style={{...S.th,textAlign:"center",minWidth:90}}>{f.fase||"—"}</th>)}
+                <th style={S.th}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {entregaveis.map((ent,i)=>(
+                <tr key={i}>
+                  <td style={S.td}>
+                    <input style={{...S.input,minWidth:240}} value={ent.nome||""} onChange={e=>upEntName(i,e.target.value)}/>
+                  </td>
+                  {fs.map((_,fi)=>{
+                    const marked = !!ent.marcas?.[fi];
+                    return (
+                      <td key={fi} style={{...S.td,textAlign:"center",padding:"4px"}}>
+                        <button
+                          onClick={()=>toggleMarca(i, fi)}
+                          style={{
+                            background: marked ? C.accentBg : C.bg3,
+                            color: marked ? C.accentLight : C.text3,
+                            border: `1px solid ${marked ? C.accentBorder : C.border}`,
+                            borderRadius: 4,
+                            padding: "3px 14px",
+                            cursor: "pointer",
+                            fontSize: 12,
+                            fontWeight: 700,
+                            fontFamily: "monospace",
+                            transition: "all 0.15s",
+                            minWidth: 50,
+                          }}
+                        >
+                          {marked ? "✔" : "—"}
+                        </button>
+                      </td>
+                    );
+                  })}
+                  <td style={S.td}><button style={S.btn("danger")} onClick={()=>delEnt(i)}>✕</button></td>
+                </tr>
+              ))}
+              {entregaveis.length===0&&<tr><td colSpan={fs.length+2} style={{...S.td,textAlign:"center",padding:20,color:C.text3}}>Nenhum entregável. Clique em "+ Entregável".</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── TAB: LOIN (CORRIGIDO + classe IFC selecionável + parâmetros IFC) ───────
+function TabLoin({p,upd,disc,setDisc,view,setView}){
+  const cats=LOIN_CATS[disc]||[];
+  const loin=p.loin||{};
+  const loinAttrs=p.loinAttrs||{};
+  const loinIfc=p.loinIfc||{};
+  const fases = p.fases || [];
+
+  // Siglas de fase para cabeçalho (primeiras 2-5 letras da fase)
+  const faseShort = (nome, i) => {
+    if (!nome) return `F${i+1}`;
+    const n = nome.trim();
+    if (n.length <= 5) return n.toUpperCase();
+    const words = n.split(/\s+/);
+    if (words.length === 1) return n.slice(0,3).toUpperCase();
+    return words.map(w=>w[0]).join("").slice(0,4).toUpperCase();
+  };
+
+  const setLoin=(cat,faseIdx,val)=>{
+    upd({loin:{...loin,[disc]:{...(loin[disc]||{}),[cat]:{...(loin[disc]?.[cat]||{}),[faseIdx]:val}}}});
+  };
+  const setAttr=(cat,attr,faseIdx)=>{
+    upd({loinAttrs:{...loinAttrs,[disc]:{...(loinAttrs[disc]||{}),[cat]:{...(loinAttrs[disc]?.[cat]||{}),[attr]:faseIdx}}}});
+  };
+  const setIfc=(cat,cls)=>{
+    upd({loinIfc:{...loinIfc,[disc]:{...(loinIfc[disc]||{}),[cat]:cls}}});
+  };
+  const clearDisc=()=>{
+    const nl={...loin};delete nl[disc];
+    const na={...loinAttrs};delete na[disc];
+    const ni={...loinIfc};delete ni[disc];
+    upd({loin:nl,loinAttrs:na,loinIfc:ni});
+  };
+
+  // Atributos BIM (mesma lista que estava)
+  const LOIN_ATTRS = [
+    "Classificação ABNT 15965","Classificação Omniclass","EAP do CLIENTE",
+    "DESCRIÇÃO DO OBJETO","NOME DO TIPO","EXTERNO/INTERNO","ESTRUTURAL/NÃO ESTRUTURAL",
+    "SISTEMA","MATERIAL/ACABAMENTO","RESISTÊNCIA AO FOGO","TRANSMISSÃO DE CALOR",
+    "ALTURA","COMPRIMENTO","LARGURA","ÁREA","VOLUME","INCLINAÇÃO","ALTURA DO PEITORIL/INSTALAÇÃO",
+  ];
+
+  const ifcParams = IFC_PARAMS_BY_DISC[disc] || [];
+
+  return(
+    <div>
+      <SectionTitle num="§6" title="Matriz LOIN — Nível de Informação Necessária" sub="ISO 19650-1 §12 · buildingSMART · LOIN = LoG (Geométrico) + LoI (Informacional)"/>
+      <div style={S.card}>
+        <div style={{...S.callout("blue"),fontSize:11}}>
+          <strong style={{fontSize:10,fontFamily:"monospace",display:"block",marginBottom:3}}>Como preencher — importante</strong>
+          O LOIN (Level of Information Need), conforme ISO 19650-1:2018 §12, separa o nível geométrico (<strong>LoG</strong>) do nível informacional (<strong>LoI</strong>). Para <strong>cada fase do projeto</strong>, selecione a combinação LoG/LoI exigida. No modo <em>Atributos BIM</em>, escolha <strong>a partir de qual fase</strong> o atributo passa a ser obrigatório. No modo <em>Classe IFC</em>, defina a classe IFC correta para cada objeto (já pré-preenchida com o padrão). No modo <em>Parâmetros IFC</em>, veja os parâmetros obrigatórios para exportação IFC da disciplina selecionada.
+        </div>
+        <div style={{display:"flex",gap:12,marginBottom:12,flexWrap:"wrap",alignItems:"flex-end"}}>
+          <div style={{flex:1,minWidth:220}}>
+            <label style={S.label}>Disciplina</label>
+            <select style={S.select} value={disc} onChange={e=>setDisc(e.target.value)}>
+              {Object.keys(LOIN_CATS).map(d=><option key={d} value={d}>{d}</option>)}
+            </select>
+          </div>
+          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+            <button style={{...S.btn(view==="nivel"?"primary":"ghost"),fontSize:11}} onClick={()=>setView("nivel")}>Nível LoG/LoI</button>
+            <button style={{...S.btn(view==="atributos"?"primary":"ghost"),fontSize:11}} onClick={()=>setView("atributos")}>Atributos BIM</button>
+            <button style={{...S.btn(view==="ifc"?"primary":"ghost"),fontSize:11}} onClick={()=>setView("ifc")}>Classe IFC</button>
+            <button style={{...S.btn(view==="params"?"primary":"ghost"),fontSize:11}} onClick={()=>setView("params")}>Parâmetros IFC</button>
+            <button style={S.btn("ghost")} onClick={clearDisc} title="Limpar disciplina">✕ Limpar</button>
+          </div>
+        </div>
+
+        <div style={{display:"flex",gap:20,marginBottom:10,flexWrap:"wrap"}}>
+          <div>
+            <div style={{fontSize:9,color:C.text3,fontFamily:"monospace",marginBottom:4,letterSpacing:"0.08em",textTransform:"uppercase"}}>LoG — Geometria</div>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+              {[["NG","Sem geometria"],["SG","Simbólica"],["PG","Paramétrica genérica"],["AG","Paramétrica avançada"]].map(([k,l])=><span key={k} style={{fontSize:10,color:C.text2}}><span style={{color:C.accentLight,fontFamily:"monospace",fontWeight:700}}>{k}</span> = {l}</span>)}
+            </div>
+          </div>
+          <div>
+            <div style={{fontSize:9,color:C.text3,fontFamily:"monospace",marginBottom:4,letterSpacing:"0.08em",textTransform:"uppercase"}}>LoI — Informação</div>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+              {[["NI","Sem info"],["LI","Limitada"],["MI","Média"],["AI","Avançada"]].map(([k,l])=><span key={k} style={{fontSize:10,color:C.text2}}><span style={{color:C.gold,fontFamily:"monospace",fontWeight:700}}>{k}</span> = {l}</span>)}
+            </div>
+          </div>
+        </div>
+
+        {fases.length === 0 && view!=="ifc" && view!=="params" && (
+          <div style={{...S.callout("red"),fontSize:11}}>
+            <strong>Nenhuma fase cadastrada.</strong> Vá até a aba "Fases/CDE" e cadastre pelo menos uma fase para preencher a matriz LOIN.
+          </div>
+        )}
+
+        <div style={{overflowX:"auto"}}>
+          {/* MODO 1: Nível LoG/LoI por fase */}
+          {view==="nivel" && fases.length > 0 && (
+            <table style={S.table}>
+              <thead>
+                <tr>
+                  <th style={{...S.th,minWidth:260}}>Categoria / Elemento</th>
+                  {fases.map((f,i)=><th key={i} style={{...S.th,textAlign:"center",minWidth:100}}>{faseShort(f.fase,i)}<br/><span style={{color:C.text3,fontSize:8,fontWeight:400,textTransform:"none"}}>LoG/LoI</span></th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {cats.map(cat=>{
+                  const cl=loin[disc]?.[cat]||{};
+                  const isSection=cat.startsWith("ELEMENTOS")||cat.startsWith("SISTEMA")||cat.startsWith("ESPAÇO");
+                  return(
+                    <tr key={cat}>
+                      <td style={{...S.td,fontWeight:isSection?600:400,color:isSection?C.accentLight:C.text2,paddingLeft:isSection?8:16,borderLeft:isSection?`2px solid ${C.accentBorder}`:"none"}}>{cat}</td>
+                      {fases.map((_,fi)=>(
+                        <td key={fi} style={{...S.td,textAlign:"center",padding:"4px 6px"}}>
+                          <select value={cl[fi]||""} onChange={e=>setLoin(cat,fi,e.target.value)}
+                            style={{...S.select,width:86,fontSize:10.5,padding:"3px 4px",textAlign:"center",background:cl[fi]?C.accentBg:C.bg3,color:cl[fi]?C.accentLight:C.text3,border:`1px solid ${cl[fi]?C.accentBorder:C.border}`}}>
+                            <option value="">—</option>
+                            {LOIN_GEOM.flatMap(g=>LOIN_INFO.map(i=><option key={g+i} value={g+"/"+i}>{g}/{i}</option>))}
+                          </select>
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+
+          {/* MODO 2: Atributos BIM — a partir de qual FASE o atributo é obrigatório */}
+          {view==="atributos" && fases.length > 0 && (
+            <>
+              <div style={{fontSize:11,color:C.text2,marginBottom:8,fontFamily:"monospace",background:C.bg3,padding:"8px 10px",borderRadius:4}}>
+                Para cada atributo, escolha <strong style={{color:C.accentLight}}>a partir de qual fase</strong> ele passa a ser obrigatório. "—" = não aplicável. "Todas" = obrigatório desde a primeira fase.
+              </div>
+              <table style={S.table}>
+                <thead>
+                  <tr>
+                    <th style={{...S.th,minWidth:220}}>Categoria</th>
+                    {LOIN_ATTRS.map(a=><th key={a} style={{...S.th,maxWidth:90,fontSize:8,whiteSpace:"normal",lineHeight:1.2,padding:"4px 6px"}}>{a}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {cats.map(cat=>{
+                    const ca=loinAttrs[disc]?.[cat]||{};
+                    const isSection=cat.startsWith("ELEMENTOS")||cat.startsWith("SISTEMA")||cat.startsWith("ESPAÇO");
+                    return(
+                      <tr key={cat}>
+                        <td style={{...S.td,fontWeight:isSection?600:400,color:isSection?C.accentLight:C.text2,fontSize:11,paddingLeft:isSection?8:14}}>{cat}</td>
+                        {LOIN_ATTRS.map(attr=>{
+                          const val = ca[attr]; // '' | 'all' | '0' | '1' | ...
+                          const isSet = val !== undefined && val !== "";
+                          return (
+                            <td key={attr} style={{...S.td,textAlign:"center",padding:"3px 4px"}}>
+                              <select value={val!==undefined?String(val):""} onChange={e=>setAttr(cat,attr,e.target.value)}
+                                style={{...S.select,width:60,fontSize:9.5,padding:"2px 2px",textAlign:"center",background:isSet?C.accentBg:C.bg3,color:isSet?C.accentLight:C.text3,border:`1px solid ${isSet?C.accentBorder:C.border}`}}>
+                                <option value="">—</option>
+                                <option value="all">Todas</option>
+                                {fases.map((f,fi)=><option key={fi} value={String(fi)}>{faseShort(f.fase,fi)}</option>)}
+                              </select>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </>
+          )}
+
+          {/* MODO 3: Classe IFC selecionável por categoria */}
+          {view==="ifc" && (
+            <>
+              <div style={{fontSize:11,color:C.text2,marginBottom:8,fontFamily:"monospace",background:C.bg3,padding:"8px 10px",borderRadius:4}}>
+                Cada categoria vem com a classe IFC correta <strong style={{color:C.accentLight}}>pré-selecionada</strong>. Ajuste conforme necessário — essa classe será usada no mapeamento Revit→IFC e nas verificações IDS.
+              </div>
+              <table style={S.table}>
+                <thead>
+                  <tr>
+                    <th style={{...S.th,minWidth:260}}>Categoria / Elemento</th>
+                    <th style={{...S.th,minWidth:260}}>Classe IFC</th>
+                    <th style={{...S.th,minWidth:200}}>Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cats.map(cat=>{
+                    const isSection=cat.startsWith("ELEMENTOS")||cat.startsWith("SISTEMA")||cat.startsWith("ESPAÇO");
+                    const savedIfc = loinIfc[disc]?.[cat];
+                    const defaultIfcCls = defaultIfc(cat);
+                    const current = savedIfc || defaultIfcCls;
+                    const isDefault = !savedIfc;
+                    return(
+                      <tr key={cat}>
+                        <td style={{...S.td,fontWeight:isSection?600:400,color:isSection?C.accentLight:C.text2,paddingLeft:isSection?8:16,borderLeft:isSection?`2px solid ${C.accentBorder}`:"none"}}>{cat}</td>
+                        <td style={S.td}>
+                          <select value={current} onChange={e=>setIfc(cat, e.target.value)}
+                            style={{...S.select, fontFamily:"monospace", fontSize:11.5, color: C.accentLight, background: C.bg3}}>
+                            {IFC_CLASSES.map(c=><option key={c} value={c}>{c}</option>)}
+                          </select>
+                        </td>
+                        <td style={{...S.td, fontSize:10}}>
+                          {isDefault ? (
+                            <span style={{color:C.text3, fontFamily:"monospace"}}>padrão</span>
+                          ) : (
+                            <button style={{...S.btn("ghost"), fontSize:10, padding:"3px 8px"}} onClick={()=>setIfc(cat, "")}>Restaurar padrão</button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </>
+          )}
+
+          {/* MODO 4: Biblioteca de Parâmetros IFC (LOIN) — parâmetros obrigatórios para exportação */}
+          {view==="params" && (
+            <>
+              <div style={{fontSize:11,color:C.text2,marginBottom:8,fontFamily:"monospace",background:C.bg3,padding:"8px 10px",borderRadius:4}}>
+                Parâmetros obrigatórios para exportação IFC da disciplina <strong style={{color:C.accentLight}}>{disc}</strong>. Use esta referência para configurar o <em>Property Set</em> no Revit. Para adicionar requisitos específicos do projeto, use a aba <strong style={{color:C.accentLight}}>PSets</strong>.
+              </div>
+              <table style={S.table}>
+                <thead>
+                  <tr>
+                    <th style={{...S.th,minWidth:180}}>Nome do Parâmetro</th>
+                    <th style={{...S.th,minWidth:200}}>Tipo IFC</th>
+                    <th style={{...S.th,minWidth:110}}>Unidade</th>
+                    <th style={{...S.th,minWidth:90,textAlign:"center"}}>Obrigatório</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ifcParams.map((param,i)=>(
+                    <tr key={i}>
+                      <td style={{...S.td, fontWeight:500, color:C.text, fontFamily:"monospace", fontSize:11.5}}>{param.nome}</td>
+                      <td style={{...S.td, fontFamily:"monospace", fontSize:11, color:C.accentLight}}>{param.tipo}</td>
+                      <td style={{...S.td, fontSize:11, color:C.text2, fontFamily:"monospace"}}>{param.unidade}</td>
+                      <td style={{...S.td, textAlign:"center"}}>
+                        <span style={S.badge(param.obrig?"green":"gray")}>{param.obrig?"OBRIG":"opt"}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div style={{marginTop:10, padding:"8px 12px", background:C.goldBg, border:`1px solid ${C.goldBorder}33`, borderRadius:4, fontSize:11, color:C.text2}}>
+                <strong style={{color:C.gold, fontSize:10, fontFamily:"monospace", textTransform:"uppercase", letterSpacing:"0.08em"}}>Dica:</strong> Para definir requisitos <em>não-geométricos</em> específicos deste projeto (com nome, tipo IFC, unidade, fase e obrigatoriedade marcável), use a aba <strong style={{color:C.accentLight}}>PSets</strong>.
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── TAB: PSETS POR PROJETO (novos requisitos não-geométricos) ──────────────
+function TabPsets({p,upd}){
+  const psets = p.psets || [];
+  const fases = p.fases || [];
+
+  const addPset = () => upd({psets: [...psets, {
+    id: Date.now().toString(),
+    nome: "",
+    tipo: "IfcLabel",
+    unidade: "—",
+    fase: "",
+    obrigatorio: true,
+    disciplina: "ARQ",
+    descricao: "",
+  }]});
+  const delPset = (id) => upd({psets: psets.filter(x=>x.id!==id)});
+  const updPset = (id, k, v) => upd({psets: psets.map(x=>x.id===id?{...x,[k]:v}:x)});
+
+  return(
+    <div>
+      <SectionTitle num="§6b" title="Property Sets — Requisitos do Projeto" sub="Requisitos não-geométricos específicos deste projeto · alimentam o IFC via Property Set"/>
+      <div style={S.card}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
+          <div style={S.cardTitle}>Pset do Projeto — {p.psetName || "(defina em Projeto → Pset)"}</div>
+          <button style={S.btn("primary")} onClick={addPset}>+ Parâmetro</button>
+        </div>
+        <div style={{...S.callout("blue"),fontSize:11}}>
+          <strong style={{fontSize:10,fontFamily:"monospace",display:"block",marginBottom:3}}>Como usar</strong>
+          Cadastre aqui parâmetros <em>não-geométricos</em> específicos do seu projeto (ex.: código da EAP do cliente, classificação de sustentabilidade, requisito de manutenção FM). Cada parâmetro tem <strong>Nome</strong>, <strong>Tipo IFC</strong> (IfcLabel, IfcBoolean, IfcPowerMeasure…), <strong>Unidade</strong>, <strong>Fase</strong> em que vira obrigatório, <strong>Obrigatoriedade</strong> (marcável) e <strong>Disciplina</strong>. Use estes parâmetros para complementar a biblioteca LOIN padrão.
+        </div>
+        <div style={{overflowX:"auto"}}>
+          <table style={S.table}>
+            <thead>
+              <tr>
+                <th style={{...S.th, minWidth:160}}>Nome</th>
+                <th style={{...S.th, minWidth:200}}>Tipo IFC</th>
+                <th style={{...S.th, minWidth:120}}>Unidade</th>
+                <th style={{...S.th, minWidth:130}}>Disciplina</th>
+                <th style={{...S.th, minWidth:160}}>Fase de obrigatoriedade</th>
+                <th style={{...S.th, minWidth:100, textAlign:"center"}}>Obrigatório</th>
+                <th style={{...S.th, minWidth:220}}>Descrição</th>
+                <th style={S.th}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {psets.map(ps=>(
+                <tr key={ps.id}>
+                  <td style={S.td}>
+                    <input style={{...S.input, minWidth:150, fontFamily:"monospace"}} value={ps.nome||""} onChange={e=>updPset(ps.id, "nome", e.target.value)} placeholder="EAP_Cliente"/>
+                  </td>
+                  <td style={S.td}>
+                    <select style={{...S.select, fontFamily:"monospace", fontSize:11, color:C.accentLight}} value={ps.tipo||"IfcLabel"} onChange={e=>updPset(ps.id, "tipo", e.target.value)}>
+                      {IFC_DATA_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </td>
+                  <td style={S.td}>
+                    <input style={{...S.input, width:110, fontFamily:"monospace"}} value={ps.unidade||""} onChange={e=>updPset(ps.id, "unidade", e.target.value)} placeholder="—"/>
+                  </td>
+                  <td style={S.td}>
+                    <select style={{...S.select, width:120}} value={ps.disciplina||"ARQ"} onChange={e=>updPset(ps.id, "disciplina", e.target.value)}>
+                      <option value="TODAS">TODAS</option>
+                      <option value="ARQ">ARQ</option>
+                      <option value="EST">EST</option>
+                      <option value="ELE">ELE</option>
+                      <option value="HID">HID</option>
+                      <option value="CLI">CLI</option>
+                      <option value="VED">VED</option>
+                    </select>
+                  </td>
+                  <td style={S.td}>
+                    <select style={{...S.select, minWidth:150}} value={ps.fase||""} onChange={e=>updPset(ps.id, "fase", e.target.value)}>
+                      <option value="">— não definido —</option>
+                      {fases.map((f,i)=><option key={i} value={String(i)}>{f.fase || `Fase ${i+1}`}</option>)}
+                      <option value="all">Todas as fases</option>
+                    </select>
+                  </td>
+                  <td style={{...S.td, textAlign:"center"}}>
+                    <label style={{display:"inline-flex", alignItems:"center", cursor:"pointer"}}>
+                      <input type="checkbox" checked={!!ps.obrigatorio} style={{accentColor:C.accent, width:16, height:16}} onChange={e=>updPset(ps.id, "obrigatorio", e.target.checked)}/>
+                    </label>
+                  </td>
+                  <td style={S.td}>
+                    <input style={{...S.input, minWidth:220}} value={ps.descricao||""} onChange={e=>updPset(ps.id, "descricao", e.target.value)} placeholder="Descrição do requisito…"/>
+                  </td>
+                  <td style={S.td}><button style={S.btn("danger")} onClick={()=>delPset(ps.id)}>✕</button></td>
+                </tr>
+              ))}
+              {psets.length===0 && <tr><td colSpan={8} style={{...S.td, textAlign:"center", padding:30, color:C.text3}}>Nenhum parâmetro customizado. Clique em "+ Parâmetro" para adicionar um requisito.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {psets.length > 0 && (
+        <div style={S.card}>
+          <div style={S.cardTitle}>Resumo — Parâmetros Obrigatórios Ativos</div>
+          <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:10}}>
+            {psets.filter(x=>x.obrigatorio).map(ps=>(
+              <div key={ps.id} style={{background:C.bg3, border:`1px solid ${C.accentBorder}44`, borderRadius:5, padding:"10px 12px"}}>
+                <div style={{fontFamily:"monospace", fontWeight:700, fontSize:12.5, color:C.accentLight}}>{ps.nome||"(sem nome)"}</div>
+                <div style={{fontFamily:"monospace", fontSize:10, color:C.text3, marginTop:3}}>{ps.tipo} · {ps.unidade} · <span style={{color:C.gold}}>{ps.disciplina}</span></div>
+                {ps.fase && <div style={{fontSize:10.5, color:C.text2, marginTop:4}}>Obrigatório a partir de: <strong>{ps.fase==="all"?"Todas as fases":(fases[parseInt(ps.fase)]?.fase||"—")}</strong></div>}
+                {ps.descricao && <div style={{fontSize:11, color:C.text2, marginTop:6, lineHeight:1.5}}>{ps.descricao}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+// ─── TAB: SETORIZAÇÃO ────────────────────────────────────────────────────────
+function TabSetores({p,upd}){
+  const st=p.setores||[];
+  const addSt=()=>upd({setores:[...st,{codigo:"",nome:"",abrangencia:""}]});
+  const delSt=(i)=>upd({setores:st.filter((_,x)=>x!==i)});
+  const upSt=(i,k,v)=>upd({setores:st.map((s,x)=>x===i?{...s,[k]:v}:s)});
+  return(
+    <div>
+      <SectionTitle num="§5.6" title="Setorização dos Modelos" sub="Divisão dos entregáveis IFC por setor — nomenclatura obrigatória"/>
+      <div style={S.card}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={S.cardTitle}>Setores — Modelos IFC Separados por Setor</div>
+          <button style={S.btn("primary")} onClick={addSt}>+ Setor</button>
+        </div>
+        <div style={{...S.callout("gold"),fontSize:11}}>
+          <strong style={{fontSize:10,fontFamily:"monospace",display:"block",marginBottom:3}}>Nomenclatura obrigatória</strong>
+          Padrão: <code style={{fontFamily:"monospace",color:C.accentLight,background:C.bg3,padding:"1px 5px",borderRadius:3}}>{p.numero||"XXXX"}-[DSC]-EX-BIM-[SETOR]-RXX</code> — Ao exportar para IFC em qualquer fase, o projetista deverá apresentar o modelo completo sem agrupamentos.
+        </div>
+        <table style={S.table}>
+          <thead><tr><th style={S.th}>Código</th><th style={S.th}>Nome do Setor</th><th style={S.th}>Abrangência (pavimentos / volumes)</th><th style={S.th}></th></tr></thead>
+          <tbody>
+            {st.map((s,i)=>(
+              <tr key={i}>
+                <td style={S.td}><input style={{...S.input,width:80}} value={s.codigo||""} onChange={e=>upSt(i,"codigo",e.target.value)}/></td>
+                <td style={S.td}><input style={{...S.input,minWidth:160}} value={s.nome||""} onChange={e=>upSt(i,"nome",e.target.value)}/></td>
+                <td style={S.td}><input style={{...S.input,minWidth:260}} value={s.abrangencia||""} onChange={e=>upSt(i,"abrangencia",e.target.value)}/></td>
+                <td style={S.td}><button style={S.btn("danger")} onClick={()=>delSt(i)}>✕</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── TAB: COORDENADAS ────────────────────────────────────────────────────────
+function TabCoordenadas({p,upd}){
+  const f=(k)=>(e)=>upd({[k]:e.target.value});
+  const fileRef=useRef();
+  const handleImg=(e)=>{
+    const file=e.target.files?.[0];
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=(ev)=>upd({pbpImageData:ev.target.result});
+    reader.readAsDataURL(file);
+  };
+  return(
+    <div>
+      <SectionTitle num="§5.4" title="Sistema de Coordenadas e Ponto Base" sub="Anexo 04 — Posicionamento Referenciado dos Modelos (SIRGAS 2000 / IBGE)"/>
+      <div style={S.card}>
+        <div style={{...S.callout("red"),fontSize:11}}>
+          <strong style={{fontSize:10,fontFamily:"monospace",display:"block",marginBottom:3}}>OBRIGATÓRIO — Antes de Modelar</strong>
+          Todas as disciplinas devem possuir as MESMAS coordenadas em seus modelos. Para que o modelo federado seja montado com sobreposição correta dos arquivos IFC, é necessário que todos tenham um ponto base posicionado no mesmo local. Configurar ANTES de iniciar a modelagem.
+        </div>
+        <div style={S.cardTitle}>Coordenadas do Ponto Base do Projeto</div>
+        <div style={S.grid3}>
+          <F label="N/S" hint="Northing SIRGAS 2000" value={p.ns} onChange={f("ns")} placeholder="7389333.2200"/>
+          <F label="L/O" hint="Easting SIRGAS 2000" value={p.lo} onChange={f("lo")} placeholder="330268.3550"/>
+          <F label="Elevação (m)" hint="Nível do terreno de referência" value={p.elev} onChange={f("elev")} placeholder="738.505"/>
+        </div>
+        <div style={S.grid2}>
+          <Sel label="Datum / Sistema Geodésico" hint="Padrão IBGE" value={p.datum} onChange={f("datum")}>
+            {["SIRGAS 2000","SAD 69","WGS 84"].map(d=><option key={d}>{d}</option>)}
+          </Sel>
+          <F label="Ângulo para Norte Verdadeiro" hint="0.00° = alinhado ao norte" value={p.anguloNorte} onChange={f("anguloNorte")} placeholder="0.00°"/>
+        </div>
+        <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:5,padding:"12px 16px",fontFamily:"monospace",fontSize:12.5,lineHeight:2.1,marginTop:4}}>
+          <div><span style={{color:C.text3,marginRight:12,fontSize:11}}>Ponto base do projeto</span></div>
+          <div><span style={{color:C.text3,marginRight:12}}>N/S</span><span style={{color:C.accentLight,fontWeight:600}}>{p.ns||"—"}</span></div>
+          <div><span style={{color:C.text3,marginRight:12}}>L/O</span><span style={{color:C.accentLight,fontWeight:600}}>{p.lo||"—"}</span></div>
+          <div><span style={{color:C.text3,marginRight:12}}>Elev</span><span style={{color:C.accentLight,fontWeight:600}}>{p.elev||"—"} m</span></div>
+          <div><span style={{color:C.text3,marginRight:12}}>Datum</span><span style={{color:C.accentLight,fontWeight:600}}>{p.datum||"SIRGAS 2000"}</span></div>
+          <div><span style={{color:C.text3,marginRight:12}}>Norte verdadeiro</span><span style={{color:C.accentLight,fontWeight:600}}>{p.anguloNorte||"0.00°"}</span></div>
+          <div><span style={{color:C.text3,marginRight:12}}>Arquivo base</span><span style={{color:C.gold,fontWeight:600}}>{p.templateRvt||`${p.numero||"XXXX"}-COO-EP-007-PEB-R03.rvt`}</span></div>
+        </div>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Imagem do Ponto Base — Localização no Modelo / Terreno</div>
+        <div style={{...S.callout("blue"),fontSize:11}}>Upload de imagem de referência do PBP (Project Base Point) no modelo Revit ou planta do terreno marcando o ponto de origem. Recomendado: captura de tela do Revit com o ponto base visível (Visibilidade/Sobreposição → Terreno → Ponto base do projeto).
+        </div>
+        <div style={{display:"flex",gap:16,alignItems:"flex-start",flexWrap:"wrap"}}>
+          <div>
+            <button style={S.btn("ghost")} onClick={()=>fileRef.current?.click()}>📎 Selecionar Imagem</button>
+            <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleImg}/>
+            {p.pbpImageData&&<button style={{...S.btn("danger"),marginLeft:8}} onClick={()=>upd({pbpImageData:null})}>Remover</button>}
+          </div>
+          {p.pbpImageData?(
+            <img src={p.pbpImageData} alt="PBP" style={{maxWidth:"100%",maxHeight:320,borderRadius:5,border:`1px solid ${C.border}`,objectFit:"contain"}}/>
+          ):(
+            <div style={{width:400,height:180,background:C.bg3,border:`1px dashed ${C.border}`,borderRadius:5,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:8,color:C.text3,fontSize:12}}>
+              <span style={{fontSize:32}}>🗺</span>
+              <span>Clique em "Selecionar Imagem" para fazer upload</span>
+              <span style={{fontSize:10,fontFamily:"monospace"}}>PNG, JPG, WEBP — Recomendado: captura do Revit</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Passo a Passo — Revit 2026 (Anexo 04)</div>
+        {[
+          ["1","Unidades de Projeto","Gerenciar → Configurações → Unidades de projeto → Comprimento: Metros (2 casas decimais)."],
+          ["2","Ativar Pontos de Origem","Vista de Planta → VG (Visibilidade/Sobreposição) → Terreno → Ativar: Origem interna, Ponto base do projeto, Ponto de levantamento topográfico."],
+          ["3","Vincular Arquivo Base","Inserir → Vínculo → Vínculo do Revit → Selecionar arquivo base → Posicionamento: Automático – Da origem interna para a origem interna."],
+          ["4","Adquirir Coordenadas","Gerenciar → Localização do projeto → Coordenadas → Adquirir coordenadas → Clicar no arquivo RVT vinculado na tela de trabalho."],
+          ["5","Configurar Elevação","Ajustar o parâmetro Elevação para o valor definido neste PEB."],
+          ["6","Copiar/Monitorar Eixos e Níveis","Colaborar → Coordenar → Selecionar vínculo → Copiar → Múltiplo → Selecionar eixos e níveis → Concluir."],
+          ["7","Transferir Parâmetros","Gerenciar → Transferir padrões do projeto → Incluindo parâmetros compartilhados do arquivo base."],
+          ["8","Verificar antes de Cadastrar","Exportar IFC e verificar no Solibri Anywhere ou BIM Collab Zoom antes do cadastramento no CDE."],
+        ].map(([n,t,d])=>(
+          <div key={n} style={{display:"flex",gap:12,marginBottom:10,alignItems:"flex-start"}}>
+            <div style={{width:22,height:22,borderRadius:"50%",background:C.accentBg,border:`1px solid ${C.accentBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:C.accentLight,flexShrink:0,fontFamily:"monospace",fontWeight:700}}>{n}</div>
+            <div><div style={{fontSize:12.5,fontWeight:600,color:C.text,marginBottom:2}}>{t}</div><div style={{fontSize:11.5,color:C.text2,lineHeight:1.6}}>{d}</div></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── TAB: EXPORT IFC ─────────────────────────────────────────────────────────
+function TabIfc({p,upd}){
+  const f=(k)=>(e)=>upd({[k]:e.target.value});
+  return(
+    <div>
+      <SectionTitle num="§5.3" title="Exportação para IFC — Configurações" sub="Anexo 04 — IFC4 Reference View · Compatibilização via Solibri"/>
+      <div style={S.card}>
+        <div style={S.cardTitle}>Configurações Gerais de Exportação</div>
+        <div style={{...S.callout("gold"),fontSize:11}}>
+          <strong style={{fontSize:10,fontFamily:"monospace",display:"block",marginBottom:3}}>Plug-in obrigatório — Revit 2024+</strong>
+          Instalar addin gratuito da Autodesk App Store para exportação IFC atualizada: apps.autodesk.com → buscar "IFC 2024". Para Revit 2022/2023 não há plug-in de atualização, usar exportação nativa.
+        </div>
+        <div style={S.grid3}>
+          <Sel label="IFC Version" hint="Arquivo → Exportar → IFC → Modify Setup" value={p.ifcVersion} onChange={f("ifcVersion")}>
+            {["IFC4 Reference View","IFC4 Design Transfer View","IFC2x3 Coordination View 2.0","IFC4x3"].map(v=><option key={v}>{v}</option>)}
+          </Sel>
+          <Sel label="Coordinate Base" value={p.coordBase} onChange={f("coordBase")}>
+            {["Shared Coordinates","Internal Origin"].map(v=><option key={v}>{v}</option>)}
+          </Sel>
+          <Sel label="Level of Detail" hint="Aba: Level of Detail" value={p.geomLod} onChange={f("geomLod")}>
+            {["Low","Medium","High"].map(v=><option key={v}>{v}</option>)}
+          </Sel>
+        </div>
+        <div style={S.grid2}>
+          <F label="Nome do Export Setup" hint="Salvar como perfil reutilizável" value={p.exportSetup||"IFC_ADDOR"} onChange={f("exportSetup")} placeholder="IFC_ADDOR"/>
+          <F label="Authorization (File Header)" hint="Identificação do projeto no cabeçalho IFC" value={p.ifcAuth||"PeG"} onChange={f("ifcAuth")}/>
+        </div>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Property Sets (Aba: Property Sets)</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          {[["exportRevitPsets","✔ Export Revit property sets"],["exportIfcCommonPsets","✔ Export IFC common property sets"],["exportBaseQtys","✔ Export base quantities"],["exportSchedules","✔ Export schedules as property sets (somente IFC, Pset, Common no título)"],["exportLinkedIfc","Export linked files as separate IFCs (se usar sistema de links)"],["exportVisibleOnly","✔ Export only elements visible in view"],["includeIfcSiteElevation","✔ Include IFCSite elevation in site local placement origin (aba Advanced)"]].map(([k,l])=>(
+            <label key={k} style={{display:"flex",alignItems:"flex-start",gap:7,cursor:"pointer",fontSize:12,color:p[k]!==false?C.accentLight:C.text3}}>
+              <input type="checkbox" checked={p[k]!==false} style={{accentColor:C.accent,marginTop:2}} onChange={e=>upd({[k]:e.target.checked})}/>
+              {l}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Mapeamento Categoria Revit → Classe IFC (Arquivo → Exportar → Opções → Opções IFC)</div>
+        <table style={S.table}>
+          <thead><tr><th style={S.th}>Categoria Revit</th><th style={S.th}>Classe IFC</th><th style={S.th}>Disciplina</th></tr></thead>
+          <tbody>
+            {[["Espaços/Ambientes","IfcSpace","ARQ"],["Paredes","IfcWall","ARQ/VED"],["Portas","IfcDoor","ARQ"],["Janelas","IfcWindow","ARQ/CAI"],["Pisos/Lajes","IfcSlab","EST"],["Pilares","IfcColumn","EST"],["Vigas","IfcBeam","EST"],["Eixo Guia / Eixos","IfcGrid","Todas"],["Tubulações hidráulicas","IfcPipeSegment / IfcPipeFitting","HID"],["Cabos / Conduítes","IfcCableSegment / IfcCableFitting","ELE"],["Dutos AR Condicionado","IfcDuctSegment / IfcDuctFitting","CLI"],["Dutos Flexíveis","IfcDuctSegment (FLEXIBLESEGMENT)","CLI"]].map(([c,i,d])=>(
+              <tr key={c}><td style={S.td}>{c}</td><td style={{...S.td,fontFamily:"monospace",color:C.accentLight,fontSize:11.5}}>{i}</td><td style={S.td}><span style={S.badge("gray")}>{d}</span></td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── TAB: BCF/COLABORAÇÃO ────────────────────────────────────────────────────
+function TabBcf({p}){
+  return(
+    <div>
+      <SectionTitle num="§5.5" title="BCF — Protocolo de Colaboração e Comunicação" sub="Anexo 05 · BIM Collaboration Format · Construflow + Solibri Anywhere"/>
+      <div style={S.card}>
+        <div style={S.cardTitle}>Plataformas Utilizadas</div>
+        <div style={S.grid2}>
+          <div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:5,padding:14}}>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>📁 {p.repositorio||"Autodoc"} — Repositório</div>
+            <div style={{fontSize:11.5,color:C.text2,lineHeight:1.7}}>Centralização de <strong>toda documentação</strong> do projeto: DWG, PDF, IFC, XLS, DOC, DWF. Todos os envolvidos devem acessar a última versão dos arquivos aqui. Todas as atualizações de modelos IFC também devem ser inseridas.</div>
+          </div>
+          <div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:5,padding:14}}>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>🔗 {p.cde||"Construflow"} — CDE / Colaboração BIM</div>
+            <div style={{fontSize:11.5,color:C.text2,lineHeight:1.7}}>Projetistas cadastram IFC, acurácia é realizada no Solibri e sincronizada. Modelo federado visualizável automaticamente. Issues, comentários e solicitações via BCF. Prazos de resposta conforme cronograma.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Nomenclatura Padrão de Issues — Título</div>
+        <div style={{...S.callout("blue"),fontSize:11}}>
+          <strong style={{display:"block",marginBottom:6,fontSize:10,fontFamily:"monospace"}}>FORMATO: [DSC1|DSC2] – DESCRIÇÃO OBJETIVA DO PROBLEMA</strong>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            <div style={{fontFamily:"monospace",color:C.accentLight}}>ARQ|EST – PILAR DESALINHADO COM ARQUITETURA</div>
+            <div style={{fontFamily:"monospace",color:C.accentLight}}>ELE – QUADRO DE FORÇA × ESPESSURA PAREDE</div>
+            <div style={{fontFamily:"monospace",color:C.accentLight}}>HID|FUN – CAIXA DE GORDURA INTERFERINDO COM SAPATA FUNDAÇÃO</div>
+          </div>
+          <div style={{marginTop:8,color:C.gold}}>⚠ APENAS A COORDENAÇÃO PODE FECHAR ISSUES.</div>
+        </div>
+        <div style={{overflowX:"auto"}}>
+          <table style={S.table}>
+            <thead><tr><th style={S.th}>Sigla</th><th style={S.th}>Disciplina</th><th style={S.th}>Sigla</th><th style={S.th}>Disciplina</th></tr></thead>
+            <tbody>
+              {[["ARQ","Arquitetura","HID","Hidráulica"],["EST","Estrutura","ELE","Elétrica"],["CLI","Ar Condicionado / AVAC","VED","Vedações"],["FUN","Fundação","COO","Coordenação / Compatibilização"],["MET","Estrutura Metálica","BIM","Implementação BIM"]].map(([s1,d1,s2,d2])=>(
+                <tr key={s1}><td style={{...S.td,fontFamily:"monospace",color:C.accentLight,fontWeight:700}}>{s1}</td><td style={S.td}>{d1}</td><td style={{...S.td,fontFamily:"monospace",color:C.accentLight,fontWeight:700}}>{s2}</td><td style={S.td}>{d2}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Campos Obrigatórios da Issue — Solibri Anywhere + Construflow</div>
+        <div style={S.grid2}>
+          <div>
+            <div style={{...S.callout("green"),fontSize:11,marginBottom:10}}>
+              <strong style={{display:"block",marginBottom:4,fontSize:10,fontFamily:"monospace"}}>Campo: Title (Título)</strong>
+              Curto e objetivo. Formato: <code>[DSC] – PROBLEMA</code>. Máx. 80 caracteres.
+            </div>
+            <div style={{...S.callout("green"),fontSize:11,marginBottom:10}}>
+              <strong style={{display:"block",marginBottom:4,fontSize:10,fontFamily:"monospace"}}>Campo: Description (Descrição)</strong>
+              Descrição clara do problema: o que foi encontrado, o que deveria estar de acordo com o PEB, impactos e sugestão (opcional).
+            </div>
+            <div style={{...S.callout("gold"),fontSize:11}}>
+              <strong style={{display:"block",marginBottom:4,fontSize:10,fontFamily:"monospace"}}>Vínculos com Modelo BIM</strong>
+              Sempre selecionar o modelo BIM mais atualizado. DOCUMENTOS: informar arquivos IFC analisados (pasta Autodoc). ANEXOS: subir o BCF exportado e vincular ao modelo BIM.
+            </div>
+          </div>
+          <div>
+            <table style={S.table}>
+              <thead><tr><th style={S.th}>Campo</th><th style={S.th}>Opções</th></tr></thead>
+              <tbody>
+                {[["Status","open (novo) · active (pendente) · resolved (resolvido) · closed (encerrado)"],["Issue Type","error (modelagem) · info (informação) · unknown (faltando info) · warning (aviso)"],["Stage","Pré-executivo · Executivo · Liberado para Obra"],["Priority","Alta · Média · Baixa"],["Visibilidade","Rascunho · Público · Coordenação · Grupo"]].map(([c,o])=>(
+                  <tr key={c}><td style={{...S.td,fontWeight:600,color:C.text,fontFamily:"monospace",fontSize:11}}>{c}</td><td style={{...S.td,fontSize:11}}>{o}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Fluxo de Comunicação BCF</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center"}}>
+          {[["1","Projetista modela","Detecta problema no próprio modelo"],["2","Cria Issue no Construflow","Preenche título, descrição, tipo, prioridade, modelo BIM vinculado"],["3","Exporta BCF","Formato BCF v2.1 pelo Solibri Anywhere → Report → BCF Report"],["4","Anexa no Construflow","Sobe o .bcfzip na aba ANEXOS e vincula ao modelo"],["5","Projetistas respondem","Dentro do prazo do cronograma, via Construflow ou BCF"],["6","Reunião de compatibilização","Coordenação analisa respostas, realiza reunião e atualiza relatório"],["7","Fechar Issue","APENAS a coordenação (Addor) pode fechar as issues"]].map(([n,t,d])=>(
+            <div key={n} style={{display:"flex",alignItems:"flex-start",gap:8,background:C.bg3,border:`1px solid ${C.border}`,borderRadius:5,padding:"9px 11px",flex:"1 1 220px",minWidth:200}}>
+              <span style={{width:20,height:20,borderRadius:"50%",background:C.accentBg,border:`1px solid ${C.accentBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:C.accentLight,flexShrink:0,fontFamily:"monospace",fontWeight:700}}>{n}</span>
+              <div><div style={{fontSize:12,fontWeight:600,color:C.text,marginBottom:2}}>{t}</div><div style={{fontSize:10.5,color:C.text2,lineHeight:1.5}}>{d}</div></div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Prioridades e Prazos de Resolução</div>
+        <table style={S.table}>
+          <thead><tr><th style={S.th}>Prioridade</th><th style={S.th}>Critério</th><th style={S.th}>Prazo</th></tr></thead>
+          <tbody>
+            {[["BLOCKER","Impede a publicação / gate","3 dias úteis","red"],["MAJOR","Não conformidade LOIN","5 dias úteis","gold"],["MINOR","Inconsistência menor","10 dias úteis","gray"],["INFO","Dúvida / RFI","3 dias úteis","blue"]].map(([p,c,pz,col])=>(
+              <tr key={p}><td style={S.td}><span style={S.badge(col)}>{p}</span></td><td style={S.td}>{c}</td><td style={S.td}>{pz}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── TAB: CORES MEP ──────────────────────────────────────────────────────────
+function TabCores(){
+  const [filter,setFilter]=useState("");
+  const filtered=MEP_COLORS.filter(c=>c.sistema.toLowerCase().includes(filter.toLowerCase()));
+  return(
+    <div>
+      <SectionTitle num="§6d" title="Cores dos Subsistemas MEP" sub="Anexo 01 e Anexo 06 — Mapeamento de materiais no Revit para compatibilização 3D"/>
+      <div style={S.card}>
+        <div style={{...S.callout("blue"),fontSize:11}}>
+          <strong style={{fontSize:10,fontFamily:"monospace",display:"block",marginBottom:3}}>Procedimento Revit (Anexo 06)</strong>
+          Modificar propriedades do <strong>Sistema de Tubulação</strong> no Project Browser → Families → Piping Systems → Piping System → [Nome do Sistema] → Type Properties → parâmetro <strong>Material</strong> → Material Browser → criar material com as cores abaixo → aba <strong>Appearance</strong>: aplicar a mesma cor (duplicar o recurso). Vista 3D em modo <strong>Shaded</strong> ou <strong>Consistent Colors</strong> para verificar.
+        </div>
+        <div style={{marginBottom:12}}>
+          <F label="Filtrar sistema" value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Buscar sistema…"/>
+        </div>
+        <div style={{overflowX:"auto"}}>
+          <table style={S.table}>
+            <thead><tr><th style={S.th}>Cor</th><th style={S.th}>Sistema</th><th style={S.th}>RGB</th><th style={S.th}>Hex</th></tr></thead>
+            <tbody>
+              {filtered.map(c=>(
+                <tr key={c.sistema}>
+                  <td style={S.td}><div style={{width:28,height:20,borderRadius:3,background:c.hex,border:`1px solid rgba(255,255,255,0.1)`}}/></td>
+                  <td style={S.td}>{c.sistema}</td>
+                  <td style={{...S.td,fontFamily:"monospace",fontSize:11,color:C.text2}}>{c.rgb}</td>
+                  <td style={{...S.td,fontFamily:"monospace",fontSize:11,color:C.gold}}>{c.hex}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── TAB: QUALIDADE ──────────────────────────────────────────────────────────
+function TabQualidade({p}){
+  return(
+    <div>
+      <SectionTitle num="§7" title="Controle de Qualidade dos Modelos" sub="Checklist de Acurácia — Solibri Office · precedente à compatibilização"/>
+      <div style={S.card}>
+        <div style={S.cardTitle}>Categorias de Verificação — Acurácia por Entrega</div>
+        <div style={{...S.callout("green"),fontSize:11}}>
+          A coordenação BIM (<strong>{p.coordenador||"Addor & Associados"}</strong>) fará avaliação de acurácia após CADA entrega de modelo de cada disciplina, usando <strong>Solibri Office</strong>. Precedente obrigatório à compatibilização.
+        </div>
+        <table style={S.table}>
+          <thead><tr><th style={S.th}>Categoria</th><th style={S.th}>Itens Verificados</th><th style={S.th}>Software</th><th style={S.th}>Frequência</th></tr></thead>
+          <tbody>
+            {[["Características gerais do modelo","Model View Definition (MVD); nível de desenvolvimento dos objetos; nome do arquivo; retirada dos arquivos de suporte; parâmetros de projeto preenchidos","Solibri Anywhere / Office","Após cada entrega"],["Requisitos para coordenação","Exportação correta de objetos e parâmetros; IfcSite / IfcBuilding / IfcBuildingStorey; coordenadas; nomenclatura e altura de níveis; exportação de elementos 2D (eixos, projeção de portas, rótulos de ambientes)","Solibri Anywhere / Office","Após cada entrega"],["Critérios de classificação dos objetos","Categorias IFC corretas (IfcWall, IfcDoor, IfcSlab…); ausência de Generic Model; subsistemas MEP com cores mapeadas conforme PEB","Solibri Anywhere / Office","Após cada entrega"],["Informações dos objetos","Parâmetros de identificação, materiais e quantidades conforme PEB e Matriz LOIN; Property Set correto; nenhum campo obrigatório vazio","Solibri / Solibri Anywhere","Após cada entrega"],["Verificação prévia de conflitos","Interferências intradisciplinares (mesmo arquivo); clashes entre disciplinas no modelo federado","Solibri Office","Após cada entrega"]].map(([cat,def,sw,freq])=>(
+              <tr key={cat}><td style={{...S.td,fontWeight:600,color:C.accentLight,fontSize:12}}>{cat}</td><td style={{...S.td,fontSize:11,lineHeight:1.6}}>{def}</td><td style={{...S.td,fontFamily:"monospace",fontSize:11}}>{sw}</td><td style={{...S.td,fontSize:11}}>{freq}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Protocolo de Furações na Estrutura</div>
+        <div style={{...S.callout("red"),fontSize:11}}>
+          <strong style={{fontSize:10,fontFamily:"monospace",display:"block",marginBottom:3}}>Após a fase dos furos da Estrutura:</strong>
+          Qualquer alteração ou novo furo deve ser <strong>justificado, documentado e apresentado à Estrutura</strong>. Toda interoperabilidade em formato IFC.
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
+          {[["1","ARQ/ARC/HID/ELE modelam furações com objeto 'FURO'"],["2","Exportam IFC separado apenas com furações"],["3","EST analisa implicações estruturais"],["4","Disciplinas revisam se necessário"],["5","EST emite modelo final de furações aprovadas"]].map(([n,t])=>(
+            <div key={n} style={{display:"flex",gap:6,alignItems:"center",background:C.bg3,border:`1px solid ${C.border}`,borderRadius:4,padding:"7px 10px",flex:"1 1 180px"}}>
+              <span style={{width:18,height:18,borderRadius:"50%",background:C.accentBg,border:`1px solid ${C.accentBorder}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:C.accentLight,flexShrink:0,fontFamily:"monospace",fontWeight:700}}>{n}</span>
+              <span style={{fontSize:11,color:C.text2}}>{t}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── TAB: NÍVEIS ─────────────────────────────────────────────────────────────
+function TabNiveis({p,upd}){
+  const nv=p.niveis||[];
+  const addNv=()=>upd({niveis:[...nv,{nome:"",torre:"T1",elevacao:""}]});
+  const delNv=(i)=>upd({niveis:nv.filter((_,x)=>x!==i)});
+  const upNv=(i,k,v)=>upd({niveis:nv.map((n,x)=>x===i?{...n,[k]:v}:n)});
+  const importDefault=()=>upd({niveis:[
+    {nome:"T1.T2. LIMITE COMAR",torre:"T1+T2",elevacao:"860.430"},{nome:"T1. COBERTURA",torre:"T1",elevacao:"859.030"},{nome:"T1. ÁTICO",torre:"T1",elevacao:"855.030"},
+    {nome:"T1. 31º PAV. DUPLEX SUPERIOR 1",torre:"T1",elevacao:"851.070"},{nome:"T1. 30º PAV. DUPLEX INFERIOR 1",torre:"T1",elevacao:"847.110"},
+    {nome:"T1. 29º PAV.",torre:"T1",elevacao:"843.150"},{nome:"T1. 10° PAV.",torre:"T1",elevacao:"779.975"},{nome:"T1. 7º PAV.",torre:"T1",elevacao:"770.000"},
+    {nome:"T1. 4° PAV.",torre:"T1",elevacao:"760.025"},{nome:"T1. 3º PAV.",torre:"T1",elevacao:"756.700"},{nome:"T1.T2. 1º PAV.",torre:"T1+T2",elevacao:"750.050"},
+    {nome:"T1.T2. MEZANINO",torre:"T1+T2",elevacao:"744.650"},{nome:"T1.T2. TÉRREO",torre:"T1+T2",elevacao:"739.250"},
+    {nome:"T1.T2. 1º SUB.",torre:"T1+T2",elevacao:"735.470"},{nome:"T1.T2. 2º SUB.",torre:"T1+T2",elevacao:"732.410"},
+    {nome:"T1.T2. 3º SUB.",torre:"T1+T2",elevacao:"729.350"},{nome:"T1.T2. 4º SUB.",torre:"T1+T2",elevacao:"726.290"},{nome:"T1.T2. 5º SUB.",torre:"T1+T2",elevacao:"723.230"},
+    {nome:"T2. COBERTURA",torre:"T2",elevacao:"858.610"},{nome:"T2. ÁTICO",torre:"T2",elevacao:"855.840"},
+  ]});
+  return(
+    <div>
+      <SectionTitle num="§5.4" title="Níveis do Modelo" sub="Apenas níveis ACABADO de Arquitetura — evitar auxiliares · Ref: 5232-COO-EP-007-PEB-R03"/>
+      <div style={S.card}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={S.cardTitle}>Tabela de Níveis — Nomenclatura e Elevação</div>
+          <div style={{display:"flex",gap:6}}>
+            <button style={S.btn("ghost")} onClick={importDefault}>Importar padrão Canário</button>
+            <button style={S.btn("primary")} onClick={addNv}>+ Nível</button>
+          </div>
+        </div>
+        <div style={{...S.callout("gold"),fontSize:11}}>
+          Os níveis devem estar nomeados de acordo com o pavimento a que se referem. Criar apenas os níveis ACABADO de Arquitetura de cada pavimento. Evitar níveis auxiliares (aumentam o tamanho do arquivo). <strong>OBS: dependendo da evolução do projeto os níveis podem ser ajustados.</strong>
+        </div>
+        <div style={{overflowX:"auto"}}>
+          <table style={S.table}>
+            <thead><tr><th style={S.th}>Nome do Nível — Nomenclatura exata</th><th style={S.th}>Torre</th><th style={S.th}>Elevação (m)</th><th style={S.th}></th></tr></thead>
+            <tbody>
+              {nv.map((n,i)=>(
+                <tr key={i}>
+                  <td style={S.td}><input style={{...S.input,minWidth:260,fontFamily:"monospace"}} value={n.nome||""} onChange={e=>upNv(i,"nome",e.target.value)}/></td>
+                  <td style={S.td}>
+                    <select style={{...S.select,width:90}} value={n.torre||"T1"} onChange={e=>upNv(i,"torre",e.target.value)}>
+                      {["T1","T2","T3","T1+T2","T2+T3","Geral"].map(t=><option key={t}>{t}</option>)}
+                    </select>
+                  </td>
+                  <td style={S.td}><input style={{...S.input,width:100,fontFamily:"monospace"}} value={n.elevacao||""} onChange={e=>upNv(i,"elevacao",e.target.value)} placeholder="000.000"/></td>
+                  <td style={S.td}><button style={S.btn("danger")} onClick={()=>delNv(i)}>✕</button></td>
+                </tr>
+              ))}
+              {nv.length===0&&<tr><td colSpan={4} style={{...S.td,textAlign:"center",padding:20,color:C.text3}}>Nenhum nível. Use "Importar padrão" ou adicione manualmente.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+// ─── EXPORT MODAL — escolhe seções e gera PDF via window.print() ────────────
+function ExportModal({p, onClose}){
+  const SECTIONS = [
+    ["info","📋 Identificação do Projeto","Dados gerais, cliente, métricas"],
+    ["equipes","👥 Equipes e TIDP","Disciplinas, responsáveis, contatos"],
+    ["raci","🔀 Matriz RACI","Responsabilidades por atividade"],
+    ["fases","📅 Cronograma de Fases","Fases e estados CDE"],
+    ["entregaveis","📦 Entregáveis por Etapa","Matriz de obrigações"],
+    ["loin","📐 Matriz LOIN","LoG/LoI + Atributos + Classes IFC"],
+    ["psets","🏷 Property Sets","Requisitos não-geométricos"],
+    ["setores","🗂 Setorização","Setores e abrangência"],
+    ["coordenadas","🗺 Coordenadas","Ponto base e geodésia"],
+    ["ifc","📤 Configurações IFC","Setup e mapeamentos"],
+    ["bcf","💬 BCF/Colaboração","Nomenclatura de issues"],
+    ["cores","🎨 Cores MEP","Cores dos subsistemas"],
+    ["qualidade","✅ Qualidade","Acurácia e checklist"],
+    ["niveis","🏗 Níveis do Modelo","Elevações e nomenclatura"],
+  ];
+  const [selected, setSelected] = useState(() => Object.fromEntries(SECTIONS.map(([k])=>[k,true])));
+  const toggle = (k) => setSelected(s=>({...s,[k]:!s[k]}));
+  const selAll = (v) => setSelected(Object.fromEntries(SECTIONS.map(([k])=>[k,v])));
+
+  const generatePdf = () => {
+    const win = window.open("","_blank","width=900,height=700");
+    if (!win) { alert("Permita pop-ups para gerar o relatório."); return; }
+    const html = buildReportHtml(p, selected);
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    setTimeout(()=>{
+      win.focus();
+      win.print();
+    }, 500);
+  };
+
+  return (
+    <div style={S.modal} onClick={onClose}>
+      <div style={S.modalBox} onClick={e=>e.stopPropagation()}>
+        <div style={{padding:"14px 20px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontSize:15,fontWeight:700,color:C.text,fontFamily:"'Playfair Display',Georgia,serif"}}>Exportar Relatório PDF</div>
+            <div style={{fontSize:11,color:C.text3,marginTop:3}}>Selecione as seções que deseja incluir</div>
+          </div>
+          <button style={{...S.btn("icon"),padding:"4px 10px",fontSize:14}} onClick={onClose}>✕</button>
+        </div>
+        <div style={{padding:"12px 20px",borderBottom:`1px solid ${C.border}`,display:"flex",gap:6,justifyContent:"flex-end"}}>
+          <button style={{...S.btn("ghost"),fontSize:10.5}} onClick={()=>selAll(true)}>Marcar todas</button>
+          <button style={{...S.btn("ghost"),fontSize:10.5}} onClick={()=>selAll(false)}>Desmarcar todas</button>
+        </div>
+        <div style={{padding:"12px 20px",maxHeight:420,overflowY:"auto"}}>
+          {SECTIONS.map(([k,label,sub])=>(
+            <label key={k} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 8px",borderRadius:4,cursor:"pointer",marginBottom:3,background:selected[k]?C.accentBg:"transparent",border:`1px solid ${selected[k]?C.accentBorder:"transparent"}`}}>
+              <input type="checkbox" checked={!!selected[k]} style={{accentColor:C.accent,width:16,height:16}} onChange={()=>toggle(k)}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:12.5,color:selected[k]?C.accentLight:C.text,fontWeight:selected[k]?600:400}}>{label}</div>
+                <div style={{fontSize:10.5,color:C.text3,marginTop:1}}>{sub}</div>
+              </div>
+            </label>
+          ))}
+        </div>
+        <div style={{padding:"12px 20px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8,justifyContent:"flex-end"}}>
+          <button style={S.btn("ghost")} onClick={onClose}>Cancelar</button>
+          <button style={S.btn("primary")} onClick={generatePdf}>📄 Gerar PDF</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── GERAÇÃO DE HTML DO RELATÓRIO ─────────────────────────────────────────
+function buildReportHtml(p, sel){
+  const esc = (s) => String(s==null?"":s).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+  const fases = p.fases || [];
+  const faseShort = (nome, i) => {
+    if (!nome) return `F${i+1}`;
+    const n = nome.trim();
+    if (n.length <= 5) return n.toUpperCase();
+    const words = n.split(/\s+/);
+    if (words.length === 1) return n.slice(0,3).toUpperCase();
+    return words.map(w=>w[0]).join("").slice(0,4).toUpperCase();
+  };
+
+  const css = `
+    @page { size: A4; margin: 15mm 12mm; }
+    body { font-family: 'Helvetica','Arial',sans-serif; font-size: 10pt; color:#111; line-height:1.45; margin:0; padding:0; }
+    h1 { font-family: Georgia, serif; font-size: 22pt; margin:0 0 6pt 0; border-bottom: 2pt solid #0d2218; padding-bottom:6pt; }
+    h2 { font-family: Georgia, serif; font-size: 15pt; margin:16pt 0 6pt 0; color:#0d2218; border-bottom:1pt solid #ccc; padding-bottom:3pt; page-break-after:avoid; }
+    h3 { font-family: Georgia, serif; font-size:12pt; margin:10pt 0 4pt 0; color:#234F33; page-break-after:avoid; }
+    .meta { background:#f3f5f2; border-left:3pt solid #234F33; padding:6pt 9pt; margin-bottom:12pt; font-size:9pt; }
+    .meta strong { color:#111; }
+    table { width:100%; border-collapse:collapse; margin:6pt 0 10pt 0; font-size:8.8pt; }
+    th { background:#e8ece7; text-align:left; padding:4pt 6pt; border:0.5pt solid #999; font-size:7.5pt; text-transform:uppercase; letter-spacing:0.03em; font-weight:700; }
+    td { padding:4pt 6pt; border:0.5pt solid #ccc; vertical-align:top; }
+    .tag { display:inline-block; padding:1pt 5pt; border-radius:2pt; font-size:7.5pt; font-family:monospace; background:#e0e8dc; color:#234F33; border:0.5pt solid #234F33; }
+    .tag-gold { background:#fff3cd; color:#856404; border-color:#856404; }
+    .tag-red { background:#f8d7da; color:#721c24; border-color:#721c24; }
+    .tag-blue { background:#d6e9f9; color:#0b5394; border-color:#0b5394; }
+    .kv { display:grid; grid-template-columns: 40% 60%; gap: 2pt 8pt; font-size:9pt; margin-bottom:6pt; }
+    .kv dt { color:#555; font-weight:400; }
+    .kv dd { color:#111; margin:0; font-weight:500; }
+    .cover { page-break-after: always; text-align:center; padding:30mm 0; }
+    .cover h1 { font-size:28pt; border:none; margin-bottom:10pt; }
+    .cover .sub { font-size:12pt; color:#555; margin-bottom:30pt; }
+    .cover .info { font-size:10pt; color:#111; background:#f3f5f2; padding:16pt; border-radius:4pt; display:inline-block; text-align:left; }
+    .section { page-break-before: auto; }
+    .section-new { page-break-before: always; }
+    .color-chip { display:inline-block; width:14pt; height:10pt; margin-right:4pt; vertical-align:middle; border:0.3pt solid #999; }
+    .callout { background:#fff8e1; border-left:3pt solid #d29922; padding:5pt 8pt; margin:4pt 0 8pt 0; font-size:8.5pt; }
+    .cb { display:inline-block; width:10pt; height:10pt; border:0.5pt solid #555; text-align:center; line-height:9pt; font-size:8pt; margin-right:3pt; vertical-align:middle; }
+    .cb.on { background:#234F33; color:#fff; border-color:#234F33; }
+    .small { font-size:8pt; color:#666; }
+    .pagenum { position:fixed; bottom:8mm; right:12mm; font-size:8pt; color:#888; }
+    @media print { .no-print { display:none; } }
+  `;
+
+  const parts = [];
+  parts.push(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>PEB — ${esc(p.nome||"Relatório")}</title><style>${css}</style></head><body>`);
+
+  // CAPA
+  parts.push(`
+    <div class="cover">
+      <div style="font-size:10pt;letter-spacing:0.2em;color:#234F33;font-family:monospace;margin-bottom:6pt;">ISO 19650-1:2018 · ISO 19650-2:2022</div>
+      <h1>Plano de Execução BIM</h1>
+      <div class="sub">${esc(p.tipo||"Empreendimento")}</div>
+      <div class="info">
+        <div><strong>Projeto:</strong> ${esc(p.nome||"—")}</div>
+        <div><strong>Código:</strong> ${esc(p.codigo||"—")} &nbsp;·&nbsp; <strong>N°:</strong> ${esc(p.numero||"—")}</div>
+        <div><strong>Cliente:</strong> ${esc(p.cliente||"—")}</div>
+        <div><strong>Endereço:</strong> ${esc(p.enderecoCompleto||"—")}</div>
+        <div><strong>Cidade / UF:</strong> ${esc(p.cidade||"—")} / ${esc(p.estado||"—")}</div>
+        <div><strong>Coordenador BIM (LAP):</strong> ${esc(p.coordenador||"—")}</div>
+        <div><strong>Revisão:</strong> ${esc(p.revisao||"R00")} &nbsp;·&nbsp; <strong>Data:</strong> ${esc(p.data||"—")}</div>
+        <div style="margin-top:6pt;font-size:9pt;color:#555;"><strong>Ref. Arquivo:</strong> ${esc(p.refArquivo||"—")}</div>
+      </div>
+      <div style="margin-top:30pt;font-size:9pt;color:#888;">Documento gerado pelo PEB Manager · ${new Date().toLocaleDateString("pt-BR")} ${new Date().toLocaleTimeString("pt-BR")}</div>
+    </div>
+  `);
+
+  // INFO
+  if (sel.info) {
+    parts.push(`<div class="section-new"><h2>1. Identificação do Projeto</h2>`);
+    parts.push(`<h3>1.1 Dados Gerais</h3><dl class="kv">
+      <dt>Nome</dt><dd>${esc(p.nome)}</dd>
+      <dt>Código / Número</dt><dd>${esc(p.codigo)} / ${esc(p.numero)}</dd>
+      <dt>Tipo</dt><dd>${esc(p.tipo)}</dd>
+      <dt>Tipologia</dt><dd>${esc(p.tipologia||"—")}</dd>
+      <dt>Certificação Ambiental</dt><dd>${esc(p.certificacaoAmbiental||"—")}</dd>
+      <dt>Endereço</dt><dd>${esc(p.enderecoCompleto||"—")}</dd>
+      <dt>Cidade / Estado</dt><dd>${esc(p.cidade||"—")} / ${esc(p.estado||"—")}</dd>
+      </dl>`);
+    parts.push(`<h3>1.2 Cliente</h3><dl class="kv">
+      <dt>Cliente / Contratante</dt><dd>${esc(p.cliente||"—")}</dd>
+      <dt>Departamento</dt><dd>${esc(p.departamento||"—")}</dd>
+      <dt>E-mail / Telefone</dt><dd>${esc(p.emailCliente||"—")} &nbsp;/&nbsp; ${esc(p.telefoneCliente||"—")}</dd>
+      <dt>Coordenador BIM (LAP)</dt><dd>${esc(p.coordenador||"—")}</dd>
+      </dl>`);
+    parts.push(`<h3>1.3 Métricas</h3><dl class="kv">
+      <dt>Área Construída</dt><dd>${esc(p.areaConstruida||"—")} m²</dd>
+      <dt>Área do Terreno</dt><dd>${esc(p.areaTerreno||"—")} m²</dd>
+      <dt>Pavimentos / Unidades</dt><dd>${esc(p.numPavimentos||"—")} / ${esc(p.numUnidades||"—")}</dd>
+      <dt>Data de Início</dt><dd>${esc(p.dataInicio||"—")}</dd>
+      <dt>ND Padrão</dt><dd>ND ${esc(p.lod||"350")}</dd>
+      <dt>MVD</dt><dd>${esc(p.mvd||"IFC4 Reference View")}</dd>
+      <dt>Repositório / CDE</dt><dd>${esc(p.repositorio||"—")} / ${esc(p.cde||"—")}</dd>
+      <dt>Template RVT</dt><dd>${esc(p.templateRvt||"—")}</dd>
+      <dt>Pset Name</dt><dd>${esc(p.psetName||"—")}</dd>
+      </dl>`);
+
+    // Usos BIM
+    const usos = p.usosBim||{};
+    const UMAP = {concepcao:"Concepção",documentacao:"Documentação 2D/3D",visualizacao:"Visualização",compatibilizacao:"Compatibilização",coordenacao:"Coordenação",sustentabilidade:"Sustentabilidade",analises:"Análises Eng.",quantitativos:"Quantitativos",canteiro:"Canteiro 4D",planejamento4d:"Planejamento 4D",coordenacao3d:"Coord. 3D",fabricacao:"Fabricação",custos5d:"Custos 5D",mockups:"Mock-ups",manutencao:"Manutenção FM",analisesSis:"Análise Sistemas",gestao:"Gestão (FM)",asbuilt:"As-Built (AIM)"};
+    parts.push(`<h3>1.4 Usos BIM Contratados</h3><div style="columns:3;column-gap:16pt;font-size:9pt;">`);
+    Object.entries(UMAP).forEach(([k,l])=>{
+      const on = !!usos[k];
+      parts.push(`<div style="break-inside:avoid;"><span class="cb ${on?"on":""}">${on?"✓":""}</span>${esc(l)}</div>`);
+    });
+    parts.push(`</div>`);
+
+    if (p.notas) parts.push(`<h3>1.5 Notas / OIR</h3><div class="callout">${esc(p.notas).replace(/\n/g,"<br/>")}</div>`);
+    parts.push(`</div>`);
+  }
+
+  // EQUIPES
+  if (sel.equipes) {
+    parts.push(`<div class="section-new"><h2>2. Equipes de Trabalho</h2>`);
+    const cols = p.equipeCols || ["sigla","disciplina","formato","empresa","contato","email","software","versao"];
+    const COL_LABELS = {sigla:"Sigla",disciplina:"Disciplina",formato:"Formato",empresa:"Empresa",contato:"Contato",email:"Email",software:"Software",versao:"Versão",telefone:"Telefone",papel:"Papel"};
+    parts.push(`<table><thead><tr>`);
+    cols.forEach(c=>parts.push(`<th>${esc(COL_LABELS[c]||c)}</th>`));
+    parts.push(`</tr></thead><tbody>`);
+    (p.equipes||[]).forEach(eq=>{
+      parts.push(`<tr>`);
+      cols.forEach(c=>parts.push(`<td>${esc(eq[c]||"").replace(/\n/g,"<br/>")}</td>`));
+      parts.push(`</tr>`);
+    });
+    parts.push(`</tbody></table></div>`);
+  }
+
+  // RACI
+  if (sel.raci) {
+    parts.push(`<div class="section-new"><h2>3. Matriz RACI</h2>`);
+    parts.push(`<div class="callout"><strong>ISO 19650-2 Tabela A.1</strong> — R=Responsável · A=Aprovador · C=Consultado · I=Informado</div>`);
+    const raci = p.raci || DEFAULT_RACI;
+    const disciplinas = [...new Set(["CLIENTE","COO",...(p.equipes||[]).map(e=>e.sigla).filter(Boolean)])];
+    parts.push(`<table><thead><tr><th>Atividade</th><th>§</th>`);
+    disciplinas.forEach(d=>parts.push(`<th style="text-align:center;">${esc(d)}</th>`));
+    parts.push(`</tr></thead><tbody>`);
+    RACI_ATIVIDADES.forEach(at=>{
+      parts.push(`<tr><td style="font-weight:600">${esc(at.ativ)}</td><td class="small">${esc(at.sec)}</td>`);
+      disciplinas.forEach(d=>{
+        const v = raci[d]?.[at.id]||"";
+        parts.push(`<td style="text-align:center;font-family:monospace;font-weight:700;font-size:8.5pt;">${esc(v||"—")}</td>`);
+      });
+      parts.push(`</tr>`);
+    });
+    parts.push(`</tbody></table></div>`);
+  }
+
+  // FASES
+  if (sel.fases) {
+    parts.push(`<div class="section-new"><h2>4. Cronograma de Fases</h2>`);
+    parts.push(`<table><thead><tr><th>Fase</th><th>Início</th><th>Meses</th><th>Entregáveis</th><th>Status</th></tr></thead><tbody>`);
+    fases.forEach(f=>{
+      parts.push(`<tr><td style="font-weight:600">${esc(f.fase)}</td><td>${esc(f.inicio||"—")}</td><td>${esc(f.meses||"—")}</td><td>${esc(f.entregaveis||"—")}</td><td><span class="tag">${esc(f.status||"—")}</span></td></tr>`);
+    });
+    parts.push(`</tbody></table>`);
+    parts.push(`<h3>4.1 Estados do CDE</h3><table><thead><tr><th>Estado</th><th>Descrição</th></tr></thead><tbody>
+      <tr><td><span class="tag">S0 – WIP</span></td><td>Trabalho em andamento. Acesso restrito ao autor e BIM Manager.</td></tr>
+      <tr><td><span class="tag tag-gold">S1 – Shared</span></td><td>Compartilhado para revisão e coordenação interdisciplinar.</td></tr>
+      <tr><td><span class="tag">S2 – Published</span></td><td>Publicado. Versão oficial aprovada.</td></tr>
+      <tr><td><span class="tag tag-blue">S5 – Archived</span></td><td>Arquivado. Somente consulta histórica.</td></tr>
+    </tbody></table></div>`);
+  }
+
+  // ENTREGÁVEIS
+  if (sel.entregaveis) {
+    parts.push(`<div class="section-new"><h2>5. Entregáveis Obrigatórios por Etapa</h2>`);
+    parts.push(`<table><thead><tr><th>Entregável</th>`);
+    fases.forEach(f=>parts.push(`<th style="text-align:center">${esc(faseShort(f.fase))}</th>`));
+    parts.push(`</tr></thead><tbody>`);
+    (p.entregaveis||[]).forEach(ent=>{
+      parts.push(`<tr><td>${esc(ent.nome)}</td>`);
+      fases.forEach((_,fi)=>{
+        const on = !!ent.marcas?.[fi];
+        parts.push(`<td style="text-align:center;font-weight:700;color:${on?"#234F33":"#ccc"}">${on?"✔":"—"}</td>`);
+      });
+      parts.push(`</tr>`);
+    });
+    parts.push(`</tbody></table></div>`);
+  }
+
+  // LOIN
+  if (sel.loin) {
+    parts.push(`<div class="section-new"><h2>6. Matriz LOIN</h2>`);
+    parts.push(`<div class="callout"><strong>ISO 19650-1 §12</strong> — LoG = nível geométrico · LoI = nível informacional</div>`);
+    Object.keys(LOIN_CATS).forEach(disc=>{
+      const discData = p.loin?.[disc];
+      const discAttr = p.loinAttrs?.[disc];
+      const discIfc = p.loinIfc?.[disc];
+      const hasNivel = discData && Object.keys(discData).length>0;
+      const hasAttr = discAttr && Object.keys(discAttr).length>0;
+      if (!hasNivel && !hasAttr && !discIfc) return;
+      parts.push(`<h3>${esc(disc)}</h3>`);
+      if (hasNivel && fases.length>0) {
+        parts.push(`<table><thead><tr><th>Categoria</th>`);
+        fases.forEach(f=>parts.push(`<th>${esc(faseShort(f.fase))}</th>`));
+        parts.push(`<th>Classe IFC</th></tr></thead><tbody>`);
+        LOIN_CATS[disc].forEach(cat=>{
+          const levels = discData?.[cat]||{};
+          const hasAny = Object.values(levels).some(v=>v);
+          const ifcCls = discIfc?.[cat] || defaultIfc(cat);
+          if (!hasAny && !ifcCls) return;
+          parts.push(`<tr><td>${esc(cat)}</td>`);
+          fases.forEach((_,fi)=>parts.push(`<td style="text-align:center;font-family:monospace;font-size:8pt;">${esc(levels[fi]||"—")}</td>`));
+          parts.push(`<td style="font-family:monospace;font-size:8pt;color:#234F33">${esc(ifcCls)}</td>`);
+          parts.push(`</tr>`);
+        });
+        parts.push(`</tbody></table>`);
+      }
+    });
+    parts.push(`</div>`);
+  }
+
+  // PSETS
+  if (sel.psets && (p.psets||[]).length>0) {
+    parts.push(`<div class="section-new"><h2>7. Property Sets do Projeto</h2>`);
+    parts.push(`<table><thead><tr><th>Nome</th><th>Tipo IFC</th><th>Unidade</th><th>Disciplina</th><th>Fase</th><th>Obrigatório</th><th>Descrição</th></tr></thead><tbody>`);
+    p.psets.forEach(ps=>{
+      const faseLabel = ps.fase==="all"?"Todas":(ps.fase!==""?(fases[parseInt(ps.fase)]?.fase||"—"):"—");
+      parts.push(`<tr><td style="font-family:monospace;font-weight:600">${esc(ps.nome)}</td><td style="font-family:monospace;font-size:8pt">${esc(ps.tipo)}</td><td>${esc(ps.unidade)}</td><td>${esc(ps.disciplina)}</td><td>${esc(faseLabel)}</td><td style="text-align:center">${ps.obrigatorio?"<span class=\"cb on\">✓</span>":"<span class=\"cb\"></span>"}</td><td class="small">${esc(ps.descricao||"")}</td></tr>`);
+    });
+    parts.push(`</tbody></table></div>`);
+  }
+
+  // SETORES
+  if (sel.setores) {
+    parts.push(`<div class="section-new"><h2>8. Setorização</h2>`);
+    parts.push(`<table><thead><tr><th>Código</th><th>Nome</th><th>Abrangência</th></tr></thead><tbody>`);
+    (p.setores||[]).forEach(s=>parts.push(`<tr><td style="font-weight:600">${esc(s.codigo)}</td><td>${esc(s.nome)}</td><td>${esc(s.abrangencia)}</td></tr>`));
+    parts.push(`</tbody></table></div>`);
+  }
+
+  // COORDENADAS
+  if (sel.coordenadas) {
+    parts.push(`<div class="section-new"><h2>9. Coordenadas e Ponto Base</h2>`);
+    parts.push(`<dl class="kv">
+      <dt>Northing (N/S)</dt><dd>${esc(p.ns)}</dd>
+      <dt>Easting (L/O)</dt><dd>${esc(p.lo)}</dd>
+      <dt>Elevação</dt><dd>${esc(p.elev)} m</dd>
+      <dt>Datum</dt><dd>${esc(p.datum)}</dd>
+      <dt>Ângulo Norte Verdadeiro</dt><dd>${esc(p.anguloNorte)}</dd>
+      <dt>Arquivo Base</dt><dd>${esc(p.templateRvt||"—")}</dd>
+      </dl>`);
+    if (p.pbpImageData) parts.push(`<h3>9.1 Localização no Modelo</h3><img src="${p.pbpImageData}" style="max-width:100%;max-height:300pt;border:0.5pt solid #ccc"/>`);
+    parts.push(`</div>`);
+  }
+
+  // IFC
+  if (sel.ifc) {
+    parts.push(`<div class="section-new"><h2>10. Configurações de Exportação IFC</h2>`);
+    parts.push(`<dl class="kv">
+      <dt>IFC Version</dt><dd>${esc(p.ifcVersion)}</dd>
+      <dt>Coordinate Base</dt><dd>${esc(p.coordBase)}</dd>
+      <dt>Level of Detail</dt><dd>${esc(p.geomLod)}</dd>
+      <dt>Export Setup</dt><dd>${esc(p.exportSetup)}</dd>
+      <dt>Authorization</dt><dd>${esc(p.ifcAuth)}</dd>
+      </dl>`);
+    parts.push(`<h3>10.1 Property Sets</h3><div style="font-size:9pt">`);
+    [["exportRevitPsets","Export Revit property sets"],["exportIfcCommonPsets","Export IFC common property sets"],["exportBaseQtys","Export base quantities"],["exportSchedules","Export schedules as property sets"],["exportLinkedIfc","Export linked files as separate IFCs"],["exportVisibleOnly","Export only elements visible in view"],["includeIfcSiteElevation","Include IFCSite elevation"]].forEach(([k,l])=>{
+      const on = p[k]!==false;
+      parts.push(`<div><span class="cb ${on?"on":""}">${on?"✓":""}</span>${esc(l)}</div>`);
+    });
+    parts.push(`</div></div>`);
+  }
+
+  // BCF
+  if (sel.bcf) {
+    parts.push(`<div class="section-new"><h2>11. BCF / Protocolo de Colaboração</h2>`);
+    parts.push(`<div class="callout"><strong>Nomenclatura:</strong> [DSC1|DSC2] – DESCRIÇÃO OBJETIVA · APENAS a coordenação pode fechar issues.</div>`);
+    parts.push(`<table><thead><tr><th>Sigla</th><th>Disciplina</th></tr></thead><tbody>`);
+    [["ARQ","Arquitetura"],["EST","Estrutura"],["CLI","Ar Condicionado"],["HID","Hidráulica"],["ELE","Elétrica"],["VED","Vedações"],["FUN","Fundação"],["MET","Estrutura Metálica"],["COO","Coordenação"],["BIM","Implementação BIM"]].forEach(([s,d])=>parts.push(`<tr><td style="font-family:monospace;font-weight:700">${esc(s)}</td><td>${esc(d)}</td></tr>`));
+    parts.push(`</tbody></table></div>`);
+  }
+
+  // CORES
+  if (sel.cores) {
+    parts.push(`<div class="section-new"><h2>12. Cores dos Subsistemas MEP</h2>`);
+    parts.push(`<table><thead><tr><th>Cor</th><th>Sistema</th><th>RGB</th><th>Hex</th></tr></thead><tbody>`);
+    MEP_COLORS.forEach(c=>parts.push(`<tr><td><span class="color-chip" style="background:${c.hex}"></span></td><td>${esc(c.sistema)}</td><td style="font-family:monospace;font-size:8pt">${esc(c.rgb)}</td><td style="font-family:monospace;font-size:8pt">${esc(c.hex)}</td></tr>`));
+    parts.push(`</tbody></table></div>`);
+  }
+
+  // QUALIDADE
+  if (sel.qualidade) {
+    parts.push(`<div class="section-new"><h2>13. Controle de Qualidade</h2>`);
+    parts.push(`<p style="font-size:9pt">A coordenação BIM (<strong>${esc(p.coordenador||"—")}</strong>) fará avaliação de acurácia após cada entrega, usando Solibri Office.</p>`);
+    parts.push(`<table><thead><tr><th>Categoria</th><th>Verificação</th><th>Software</th></tr></thead><tbody>
+      <tr><td>Características gerais</td><td>MVD, ND, nomenclatura, parâmetros</td><td>Solibri Anywhere / Office</td></tr>
+      <tr><td>Coordenação</td><td>IfcSite, IfcBuilding, IfcBuildingStorey, coordenadas, níveis</td><td>Solibri Anywhere / Office</td></tr>
+      <tr><td>Classificação</td><td>Categorias IFC corretas; cores MEP</td><td>Solibri Anywhere / Office</td></tr>
+      <tr><td>Informações</td><td>Parâmetros conforme LOIN; Property Sets</td><td>Solibri / Solibri Anywhere</td></tr>
+      <tr><td>Conflitos</td><td>Clashes intra/inter-disciplinas</td><td>Solibri Office</td></tr>
+    </tbody></table></div>`);
+  }
+
+  // NÍVEIS
+  if (sel.niveis && (p.niveis||[]).length>0) {
+    parts.push(`<div class="section-new"><h2>14. Níveis do Modelo</h2>`);
+    parts.push(`<table><thead><tr><th>Nome</th><th>Torre</th><th>Elevação (m)</th></tr></thead><tbody>`);
+    p.niveis.forEach(n=>parts.push(`<tr><td style="font-family:monospace">${esc(n.nome)}</td><td>${esc(n.torre)}</td><td style="font-family:monospace;text-align:right">${esc(n.elevacao)}</td></tr>`));
+    parts.push(`</tbody></table></div>`);
+  }
+
+  parts.push(`</body></html>`);
+  return parts.join("");
+}
+// ─── TAB: GUIA ISO 19650 — embutido via iframe + Blob URL ────────────────────
+// Preserva 100% da funcionalidade do guia_iso.html original (Kanban, Gantt, modais, drag-drop, SVG)
+function TabGuiaIso(){
+  const iframeRef = useRef(null);
+  const [blobUrl, setBlobUrl] = useState(null);
+  const [fullscreen, setFullscreen] = useState(false);
+
+  useEffect(()=>{
+    const blob = new Blob([GUIA_HTML], {type: "text/html; charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    setBlobUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, []);
+
+  const openInNewTab = () => {
+    if (blobUrl) window.open(blobUrl, "_blank");
+  };
+
+  const containerStyle = fullscreen ? {
+    position:"fixed", inset:0, zIndex:1000, background:C.bg2,
+    display:"flex", flexDirection:"column",
+  } : {};
+
+  return(
+    <div style={containerStyle}>
+      {!fullscreen && <SectionTitle num="§ISO" title="Guia Interativo ISO 19650" sub="Guia completo de implantação — Kanban, Gantt, fluxos, exemplos e diagramas"/>}
+      <div style={{
+        background: C.bg2,
+        border: `1px solid ${C.border}`,
+        borderRadius: fullscreen ? 0 : 6,
+        marginBottom: fullscreen ? 0 : 12,
+        display:"flex", flexDirection:"column",
+        flex: fullscreen ? 1 : "initial",
+        overflow:"hidden",
+      }}>
+        <div style={{
+          padding:"8px 14px", borderBottom:`1px solid ${C.border}`,
+          display:"flex", justifyContent:"space-between", alignItems:"center",
+          background: C.bg3, flexShrink:0,
+        }}>
+          <div style={{display:"flex", alignItems:"center", gap:10}}>
+            <span style={{fontSize:10.5, color:C.accentLight, fontFamily:"monospace", letterSpacing:"0.08em", textTransform:"uppercase"}}>
+              🧭 Guia ISO 19650 · Interativo
+            </span>
+            <span style={{fontSize:10, color:C.text3, fontFamily:"monospace"}}>
+              KANBAN · GANTT · FLUXO · EXEMPLOS · DIAGRAMAS
+            </span>
+          </div>
+          <div style={{display:"flex", gap:6}}>
+            <button style={{...S.btn("ghost"), fontSize:10.5}} onClick={openInNewTab}>↗ Nova aba</button>
+            <button style={{...S.btn("ghost"), fontSize:10.5}} onClick={()=>setFullscreen(v=>!v)}>
+              {fullscreen ? "↙ Minimizar" : "⛶ Tela cheia"}
+            </button>
+          </div>
+        </div>
+        <div style={{flex:1, minHeight: fullscreen ? "auto" : 700, background:"#fff", position:"relative"}}>
+          {blobUrl ? (
+            <iframe
+              ref={iframeRef}
+              src={blobUrl}
+              title="Guia ISO 19650"
+              style={{width:"100%", height: fullscreen ? "100%" : 700, border:"none", display:"block"}}
+              sandbox="allow-scripts allow-same-origin allow-popups allow-modals"
+            />
+          ) : (
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:400,color:C.text3}}>
+              Carregando guia…
+            </div>
+          )}
+        </div>
+      </div>
+      {!fullscreen && (
+        <div style={{...S.callout("blue"), fontSize:11}}>
+          <strong style={{fontSize:10,fontFamily:"monospace",display:"block",marginBottom:3}}>Sobre este guia</strong>
+          Este é o Guia Prático ISO 19650 em formato interativo. Contém 5 visões (Kanban geral, Kanban por fase, Gantt, Fluxo temporal e por PCD, Exemplo real), modais explicativos para cada conceito (EIR, PIR, AIR, OIR, CDE, LOIN, TIDP, MIDP, PIM, AIM, S0/S1/S2/S3), diagramas SVG animados e exemplos reais de documentação. A guia é completa e funcional — clique em qualquer card, badge ou ícone ⓘ para ver detalhes.
+        </div>
+      )}
+    </div>
+  );
+}
