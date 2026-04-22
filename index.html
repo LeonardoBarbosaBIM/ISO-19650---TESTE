@@ -4235,10 +4235,14 @@ function TabLoin({p,upd,disc,setDisc,view,setView}){
   // Siglas de fase para cabeçalho (primeiras 2-5 letras da fase)
   const faseShort = (nome, i) => {
     if (!nome) return `F${i+1}`;
-    const n = nome.trim();
+    // Remove parênteses e conteúdo entre eles, caracteres especiais
+    const n = nome.replace(/\([^)]*\)/g, "").replace(/[^\wÀ-ÿ\s]/g, " ").trim();
+    if (!n) return `F${i+1}`;
     if (n.length <= 5) return n.toUpperCase();
-    const words = n.split(/\s+/);
-    if (words.length === 1) return n.slice(0,3).toUpperCase();
+    const words = n.split(/\s+/).filter(w => w.length > 0 && /[a-zA-ZÀ-ÿ]/.test(w[0]));
+    if (words.length === 0) return `F${i+1}`;
+    if (words.length === 1) return words[0].slice(0,3).toUpperCase();
+    // Pega apenas a primeira letra alfabética de cada palavra, máximo 4
     return words.map(w=>w[0]).join("").slice(0,4).toUpperCase();
   };
 
@@ -4259,12 +4263,20 @@ function TabLoin({p,upd,disc,setDisc,view,setView}){
   };
 
   // Atributos BIM (mesma lista que estava)
-  const LOIN_ATTRS = [
-    "Classificação ABNT 15965","Classificação Omniclass","EAP do CLIENTE",
-    "DESCRIÇÃO DO OBJETO","NOME DO TIPO","EXTERNO/INTERNO","ESTRUTURAL/NÃO ESTRUTURAL",
-    "SISTEMA","MATERIAL/ACABAMENTO","RESISTÊNCIA AO FOGO","TRANSMISSÃO DE CALOR",
-    "ALTURA","COMPRIMENTO","LARGURA","ÁREA","VOLUME","INCLINAÇÃO","ALTURA DO PEITORIL/INSTALAÇÃO",
+  // Estrutura igual ao Excel padrão: 3 grupos de atributos × fases cadastradas
+  const LOIN_GROUPS = [
+    {nome:"PSET CUSTOMIZADO", cor:C.accentLight, attrs:[
+      "Classificação ABNT 15965","Classificação Omniclass","EAP do CLIENTE",
+      "Descrição do Objeto","Nome do Tipo","Externo/Interno","Estrutural/Não Estrutural",
+    ]},
+    {nome:"INFORMAÇÕES MÍNIMAS", cor:C.gold, attrs:[
+      "Sistema","Material/Acabamento","Resistência ao Fogo","Transmissão de Calor","Altura do Peitoril/Instalação",
+    ]},
+    {nome:"QUANTIDADES", cor:C.blue, attrs:[
+      "Altura","Comprimento","Largura","Área","Volume","Inclinação",
+    ]},
   ];
+  const LOIN_ATTRS = LOIN_GROUPS.flatMap(g=>g.attrs);
 
   const ifcParams = IFC_PARAMS_BY_DISC[disc] || [];
 
@@ -4346,17 +4358,26 @@ function TabLoin({p,upd,disc,setDisc,view,setView}){
             </table>
           )}
 
-          {/* MODO 2: Atributos BIM — a partir de qual FASE o atributo é obrigatório */}
+          {/* MODO 2: Atributos BIM — a partir de qual FASE o atributo é obrigatório (modelo do Excel) */}
           {view==="atributos" && fases.length > 0 && (
             <>
               <div style={{fontSize:11,color:C.text2,marginBottom:8,fontFamily:"monospace",background:C.bg3,padding:"8px 10px",borderRadius:4}}>
-                Para cada atributo, escolha <strong style={{color:C.accentLight}}>a partir de qual fase</strong> ele passa a ser obrigatório. "—" = não aplicável. "Todas" = obrigatório desde a primeira fase.
+                Matriz no formato do Excel padrão: <strong style={{color:C.accentLight}}>PSET Customizado</strong> · <strong style={{color:C.gold}}>Informações Mínimas</strong> · <strong style={{color:C.blue}}>Quantidades</strong>. Para cada atributo × categoria, escolha <strong>a partir de qual fase</strong> o atributo passa a ser obrigatório. "—" = não aplicável. "Todas" = obrigatório desde a primeira fase.
               </div>
               <table style={S.table}>
                 <thead>
                   <tr>
-                    <th style={{...S.th,minWidth:220}}>Categoria</th>
-                    {LOIN_ATTRS.map(a=><th key={a} style={{...S.th,maxWidth:90,fontSize:8,whiteSpace:"normal",lineHeight:1.2,padding:"4px 6px"}}>{a}</th>)}
+                    <th rowSpan={2} style={{...S.th,minWidth:220,verticalAlign:"bottom"}}>Categoria</th>
+                    {LOIN_GROUPS.map(g=>(
+                      <th key={g.nome} colSpan={g.attrs.length} style={{...S.th,textAlign:"center",color:g.cor,borderBottom:`2px solid ${g.cor}55`,fontSize:9,padding:"5px 4px"}}>
+                        {g.nome}
+                      </th>
+                    ))}
+                  </tr>
+                  <tr>
+                    {LOIN_GROUPS.flatMap(g=>g.attrs.map(a=>(
+                      <th key={a} style={{...S.th,maxWidth:80,fontSize:8,whiteSpace:"normal",lineHeight:1.15,padding:"4px 4px",color:g.cor}}>{a}</th>
+                    )))}
                   </tr>
                 </thead>
                 <tbody>
@@ -4372,7 +4393,7 @@ function TabLoin({p,upd,disc,setDisc,view,setView}){
                           return (
                             <td key={attr} style={{...S.td,textAlign:"center",padding:"3px 4px"}}>
                               <select value={val!==undefined?String(val):""} onChange={e=>setAttr(cat,attr,e.target.value)}
-                                style={{...S.select,width:60,fontSize:9.5,padding:"2px 2px",textAlign:"center",background:isSet?C.accentBg:C.bg3,color:isSet?C.accentLight:C.text3,border:`1px solid ${isSet?C.accentBorder:C.border}`}}>
+                                style={{...S.select,width:58,fontSize:9.5,padding:"2px 2px",textAlign:"center",background:isSet?C.accentBg:C.bg3,color:isSet?C.accentLight:C.text3,border:`1px solid ${isSet?C.accentBorder:C.border}`}}>
                                 <option value="">—</option>
                                 <option value="all">Todas</option>
                                 {fases.map((f,fi)=><option key={fi} value={String(fi)}>{faseShort(f.fase,fi)}</option>)}
@@ -4433,36 +4454,97 @@ function TabLoin({p,upd,disc,setDisc,view,setView}){
             </>
           )}
 
-          {/* MODO 4: Biblioteca de Parâmetros IFC (LOIN) — parâmetros obrigatórios para exportação */}
+          {/* MODO 4: Biblioteca de Parâmetros IFC (LOIN) — editável com obrigatoriedade */}
           {view==="params" && (
             <>
               <div style={{fontSize:11,color:C.text2,marginBottom:8,fontFamily:"monospace",background:C.bg3,padding:"8px 10px",borderRadius:4}}>
-                Parâmetros obrigatórios para exportação IFC da disciplina <strong style={{color:C.accentLight}}>{disc}</strong>. Use esta referência para configurar o <em>Property Set</em> no Revit. Para adicionar requisitos específicos do projeto, use a aba <strong style={{color:C.accentLight}}>PSets</strong>.
+                Parâmetros de exportação IFC da disciplina <strong style={{color:C.accentLight}}>{disc}</strong>. Você pode <strong>adicionar</strong>, <strong>editar</strong> e definir a <strong>obrigatoriedade</strong> (Obrigatório / Opcional / ND / —) de cada parâmetro. Use esta referência para configurar o <em>Property Set</em> no Revit.
               </div>
-              <table style={S.table}>
-                <thead>
-                  <tr>
-                    <th style={{...S.th,minWidth:180}}>Nome do Parâmetro</th>
-                    <th style={{...S.th,minWidth:200}}>Tipo IFC</th>
-                    <th style={{...S.th,minWidth:110}}>Unidade</th>
-                    <th style={{...S.th,minWidth:90,textAlign:"center"}}>Obrigatório</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ifcParams.map((param,i)=>(
-                    <tr key={i}>
-                      <td style={{...S.td, fontWeight:500, color:C.text, fontFamily:"monospace", fontSize:11.5}}>{param.nome}</td>
-                      <td style={{...S.td, fontFamily:"monospace", fontSize:11, color:C.accentLight}}>{param.tipo}</td>
-                      <td style={{...S.td, fontSize:11, color:C.text2, fontFamily:"monospace"}}>{param.unidade}</td>
-                      <td style={{...S.td, textAlign:"center"}}>
-                        <span style={S.badge(param.obrig?"green":"gray")}>{param.obrig?"OBRIG":"opt"}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8,gap:6}}>
+                <button style={S.btn("ghost")} onClick={()=>{
+                  // Restaurar padrão: limpa customizações desta disciplina
+                  const np = {...(p.ifcParamsCustom||{})};
+                  delete np[disc];
+                  upd({ifcParamsCustom:np});
+                }}>↺ Restaurar padrão</button>
+                <button style={S.btn("primary")} onClick={()=>{
+                  const custom = p.ifcParamsCustom || {};
+                  const current = custom[disc] || ifcParams.map(x=>({...x}));
+                  upd({ifcParamsCustom:{...custom, [disc]: [...current, {nome:"", tipo:"IfcLabel", unidade:"—", obrig:"opc"}]}});
+                }}>+ Parâmetro</button>
+              </div>
+              {(() => {
+                const custom = p.ifcParamsCustom || {};
+                const list = custom[disc] || ifcParams.map(x=>({...x, obrig: x.obrig===true?"obrig":(x.obrig===false?"opc":x.obrig||"opc")}));
+                const updateList = (newList) => upd({ifcParamsCustom:{...custom, [disc]: newList}});
+                return (
+                  <table style={S.table}>
+                    <thead>
+                      <tr>
+                        <th style={{...S.th,minWidth:180}}>Nome do Parâmetro</th>
+                        <th style={{...S.th,minWidth:200}}>Tipo IFC</th>
+                        <th style={{...S.th,minWidth:110}}>Unidade</th>
+                        <th style={{...S.th,minWidth:130,textAlign:"center"}}>Obrigatoriedade</th>
+                        <th style={S.th}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {list.map((param,i)=>{
+                        const normObrig = param.obrig===true?"obrig":(param.obrig===false?"opc":(param.obrig||"opc"));
+                        const color = normObrig==="obrig"?"green":normObrig==="opc"?"gold":normObrig==="nd"?"blue":"gray";
+                        return (
+                          <tr key={i}>
+                            <td style={S.td}>
+                              <input style={{...S.input, minWidth:170, fontFamily:"monospace", fontSize:11.5, color:C.text}}
+                                value={param.nome||""}
+                                onChange={e=>{const nl=[...list];nl[i]={...nl[i],nome:e.target.value};updateList(nl);}}
+                              />
+                            </td>
+                            <td style={S.td}>
+                              <select style={{...S.select, fontFamily:"monospace", fontSize:11, color:C.accentLight}}
+                                value={param.tipo||"IfcLabel"}
+                                onChange={e=>{const nl=[...list];nl[i]={...nl[i],tipo:e.target.value};updateList(nl);}}
+                              >
+                                {IFC_DATA_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+                              </select>
+                            </td>
+                            <td style={S.td}>
+                              <input style={{...S.input, width:100, fontFamily:"monospace"}}
+                                value={param.unidade||""}
+                                onChange={e=>{const nl=[...list];nl[i]={...nl[i],unidade:e.target.value};updateList(nl);}}
+                              />
+                            </td>
+                            <td style={{...S.td, textAlign:"center"}}>
+                              <select
+                                value={normObrig}
+                                onChange={e=>{const nl=[...list];nl[i]={...nl[i],obrig:e.target.value};updateList(nl);}}
+                                style={{...S.select, width:120, textAlign:"center", fontWeight:700, fontFamily:"monospace",
+                                        background: normObrig==="obrig"?C.accentBg:normObrig==="opc"?C.goldBg:normObrig==="nd"?C.blueBg:C.bg3,
+                                        color: normObrig==="obrig"?C.accentLight:normObrig==="opc"?C.gold:normObrig==="nd"?C.blue:C.text3,
+                                        border:`1px solid ${normObrig==="obrig"?C.accentBorder:normObrig==="opc"?C.goldBorder:normObrig==="nd"?C.blueBorder:C.border}`}}
+                              >
+                                <option value="obrig">Obrigatório</option>
+                                <option value="opc">Opcional</option>
+                                <option value="nd">ND</option>
+                                <option value="na">—</option>
+                              </select>
+                            </td>
+                            <td style={S.td}>
+                              <button style={S.btn("danger")} onClick={()=>{
+                                const nl = list.filter((_,x)=>x!==i);
+                                updateList(nl);
+                              }}>✕</button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {list.length===0 && <tr><td colSpan={5} style={{...S.td,textAlign:"center",padding:20,color:C.text3}}>Nenhum parâmetro. Clique em "+ Parâmetro" para adicionar.</td></tr>}
+                    </tbody>
+                  </table>
+                );
+              })()}
               <div style={{marginTop:10, padding:"8px 12px", background:C.goldBg, border:`1px solid ${C.goldBorder}33`, borderRadius:4, fontSize:11, color:C.text2}}>
-                <strong style={{color:C.gold, fontSize:10, fontFamily:"monospace", textTransform:"uppercase", letterSpacing:"0.08em"}}>Dica:</strong> Para definir requisitos <em>não-geométricos</em> específicos deste projeto (com nome, tipo IFC, unidade, fase e obrigatoriedade marcável), use a aba <strong style={{color:C.accentLight}}>PSets</strong>.
+                <strong style={{color:C.gold, fontSize:10, fontFamily:"monospace", textTransform:"uppercase", letterSpacing:"0.08em"}}>Dica:</strong> Para definir requisitos <em>específicos do projeto</em> (com nome, fase e obrigatoriedade por disciplina), use a aba <strong style={{color:C.accentLight}}>PSets</strong>. <strong>ND</strong> = Não Definido. <strong>—</strong> = Não aplicável.
               </div>
             </>
           )}
@@ -4746,38 +4828,66 @@ function TabIfc({p,upd}){
         </div>
       </div>
 
-      <div style={S.card}>
-        <div style={S.cardTitle}>Mapeamento Categoria Revit → Classe IFC (Arquivo → Exportar → Opções → Opções IFC)</div>
-        <table style={S.table}>
-          <thead><tr><th style={S.th}>Categoria Revit</th><th style={S.th}>Classe IFC</th><th style={S.th}>Disciplina</th></tr></thead>
-          <tbody>
-            {[["Espaços/Ambientes","IfcSpace","ARQ"],["Paredes","IfcWall","ARQ/VED"],["Portas","IfcDoor","ARQ"],["Janelas","IfcWindow","ARQ/CAI"],["Pisos/Lajes","IfcSlab","EST"],["Pilares","IfcColumn","EST"],["Vigas","IfcBeam","EST"],["Eixo Guia / Eixos","IfcGrid","Todas"],["Tubulações hidráulicas","IfcPipeSegment / IfcPipeFitting","HID"],["Cabos / Conduítes","IfcCableSegment / IfcCableFitting","ELE"],["Dutos AR Condicionado","IfcDuctSegment / IfcDuctFitting","CLI"],["Dutos Flexíveis","IfcDuctSegment (FLEXIBLESEGMENT)","CLI"]].map(([c,i,d])=>(
-              <tr key={c}><td style={S.td}>{c}</td><td style={{...S.td,fontFamily:"monospace",color:C.accentLight,fontSize:11.5}}>{i}</td><td style={S.td}><span style={S.badge("gray")}>{d}</span></td></tr>
-            ))}
-          </tbody>
-        </table>
+      <div style={{...S.callout("blue"), fontSize:11}}>
+        <strong style={{fontSize:10,fontFamily:"monospace",display:"block",marginBottom:3}}>💡 Mapeamento Categoria Revit → Classe IFC</strong>
+        O mapeamento de categorias para classes IFC é definido <strong>por projeto e por disciplina</strong> na aba <strong style={{color:C.accentLight}}>Matriz LOIN → Classe IFC</strong>. Lá cada categoria vem com a classe correta pré-selecionada e pode ser ajustada conforme o projeto.
       </div>
     </div>
   );
 }
 
 // ─── TAB: BCF/COLABORAÇÃO ────────────────────────────────────────────────────
-function TabBcf({p}){
+function TabBcf({p, upd}){
+  const repoLink = p.repositorioLink || "";
+  const cdeLink = p.cdeLink || "";
+  const repoDesc = p.repositorioDesc || "Centralização de toda documentação do projeto: DWG, PDF, IFC, XLS, DOC, DWF. Todos os envolvidos devem acessar a última versão dos arquivos aqui. Todas as atualizações de modelos IFC também devem ser inseridas.";
+  const cdeDesc = p.cdeDesc || "Projetistas cadastram IFC, acurácia é realizada no Solibri e sincronizada. Modelo federado visualizável automaticamente. Issues, comentários e solicitações via BCF. Prazos de resposta conforme cronograma.";
+  const openLink = (url) => { if(url) window.open(url.startsWith("http")?url:"https://"+url, "_blank", "noopener"); };
   return(
     <div>
-      <SectionTitle num="§5.5" title="BCF — Protocolo de Colaboração e Comunicação" sub="Anexo 05 · BIM Collaboration Format · Construflow + Solibri Anywhere"/>
+      <SectionTitle num="§5.5" title="BCF — Protocolo de Colaboração e Comunicação" sub="ISO 19650-2 §5.6 · BIM Collaboration Format"/>
       <div style={S.card}>
-        <div style={S.cardTitle}>Plataformas Utilizadas</div>
+        <div style={S.cardTitle}>Plataformas Utilizadas — Editável por Projeto</div>
+        <div style={{...S.callout("blue"), fontSize:11}}>
+          Defina aqui o nome da plataforma, o link direto e uma descrição do uso para este projeto. Cada projeto pode ter plataformas diferentes (Autodesk Docs/ACC, Construflow, BIMcollab, SharePoint, etc.).
+        </div>
         <div style={S.grid2}>
+          {/* Repositório */}
           <div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:5,padding:14}}>
-            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>📁 {p.repositorio||"Autodoc"} — Repositório</div>
-            <div style={{fontSize:11.5,color:C.text2,lineHeight:1.7}}>Centralização de <strong>toda documentação</strong> do projeto: DWG, PDF, IFC, XLS, DOC, DWF. Todos os envolvidos devem acessar a última versão dos arquivos aqui. Todas as atualizações de modelos IFC também devem ser inseridas.</div>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
+              <span style={{fontSize:16}}>📁</span>
+              <span style={{fontSize:10,color:C.text2,fontFamily:"monospace",letterSpacing:"0.06em",textTransform:"uppercase",flex:1}}>Repositório de Arquivos</span>
+              {repoLink && <button style={{...S.btn("ghost"), fontSize:10, padding:"3px 8px"}} onClick={()=>openLink(repoLink)}>↗ Abrir</button>}
+            </div>
+            <F label="Nome da Plataforma" value={p.repositorio||""} onChange={e=>upd({repositorio:e.target.value})} placeholder="Autodoc, ACC, SharePoint…"/>
+            <F label="Link Direto do Projeto" hint="URL completa do espaço do projeto" value={repoLink} onChange={e=>upd({repositorioLink:e.target.value})} placeholder="https://docs.b360.autodesk.com/projects/..."/>
+            <div style={{marginTop:6}}>
+              <label style={S.label}>Descrição / Uso no Projeto</label>
+              <textarea style={{...S.textarea, minHeight:70}} value={repoDesc} onChange={e=>upd({repositorioDesc:e.target.value})}/>
+            </div>
           </div>
+          {/* CDE */}
           <div style={{background:C.bg3,border:`1px solid ${C.border}`,borderRadius:5,padding:14}}>
-            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>🔗 {p.cde||"Construflow"} — CDE / Colaboração BIM</div>
-            <div style={{fontSize:11.5,color:C.text2,lineHeight:1.7}}>Projetistas cadastram IFC, acurácia é realizada no Solibri e sincronizada. Modelo federado visualizável automaticamente. Issues, comentários e solicitações via BCF. Prazos de resposta conforme cronograma.</div>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
+              <span style={{fontSize:16}}>🔗</span>
+              <span style={{fontSize:10,color:C.text2,fontFamily:"monospace",letterSpacing:"0.06em",textTransform:"uppercase",flex:1}}>CDE / Colaboração BIM</span>
+              {cdeLink && <button style={{...S.btn("ghost"), fontSize:10, padding:"3px 8px"}} onClick={()=>openLink(cdeLink)}>↗ Abrir</button>}
+            </div>
+            <F label="Nome da Plataforma" value={p.cde||""} onChange={e=>upd({cde:e.target.value})} placeholder="Construflow, BIMcollab, ACC…"/>
+            <F label="Link Direto do Projeto" hint="URL completa do espaço BIM" value={cdeLink} onChange={e=>upd({cdeLink:e.target.value})} placeholder="https://app.construflow.com/projects/..."/>
+            <div style={{marginTop:6}}>
+              <label style={S.label}>Descrição / Uso no Projeto</label>
+              <textarea style={{...S.textarea, minHeight:70}} value={cdeDesc} onChange={e=>upd({cdeDesc:e.target.value})}/>
+            </div>
           </div>
         </div>
+        {(repoLink||cdeLink) && (
+          <div style={{marginTop:12, padding:"10px 14px", background:C.accentBg, border:`1px solid ${C.accentBorder}55`, borderRadius:5, fontSize:11, color:C.text2, display:"flex", gap:12, flexWrap:"wrap", alignItems:"center"}}>
+            <span style={{fontFamily:"monospace", fontSize:10, color:C.accentLight, textTransform:"uppercase", letterSpacing:"0.06em"}}>Acesso rápido:</span>
+            {repoLink && <button style={S.btn("ghost")} onClick={()=>openLink(repoLink)}>📁 Repositório ({p.repositorio||"—"})</button>}
+            {cdeLink && <button style={S.btn("ghost")} onClick={()=>openLink(cdeLink)}>🔗 CDE ({p.cde||"—"})</button>}
+          </div>
+        )}
       </div>
 
       <div style={S.card}>
@@ -5010,18 +5120,82 @@ function ExportModal({p, onClose}){
   const toggle = (k) => setSelected(s=>({...s,[k]:!s[k]}));
   const selAll = (v) => setSelected(Object.fromEntries(SECTIONS.map(([k])=>[k,v])));
 
+  const [preview, setPreview] = useState(null);
+  const previewRef = useRef(null);
+
   const generatePdf = () => {
-    const win = window.open("","_blank","width=900,height=700");
-    if (!win) { alert("Permita pop-ups para gerar o relatório."); return; }
     const html = buildReportHtml(p, selected);
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
-    setTimeout(()=>{
-      win.focus();
-      win.print();
-    }, 500);
+    // Mostra preview inline (funciona em qualquer ambiente, inclusive artifact)
+    setPreview(html);
   };
+
+  const doPrint = () => {
+    if (previewRef.current && previewRef.current.contentWindow) {
+      try {
+        previewRef.current.contentWindow.focus();
+        previewRef.current.contentWindow.print();
+      } catch(e) {
+        alert("Não foi possível imprimir diretamente. Use 'Baixar HTML' e imprima pelo navegador.");
+      }
+    }
+  };
+
+  const downloadHtml = () => {
+    const html = buildReportHtml(p, selected);
+    const blob = new Blob([html], {type:"text/html;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `PEB_${(p.nome||"Relatorio").replace(/[^\w-]/g,"_")}_${p.revisao||"R00"}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  };
+
+  const openInNewTab = () => {
+    try {
+      const html = buildReportHtml(p, selected);
+      const blob = new Blob([html], {type:"text/html;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, "_blank");
+      if (!w) {
+        alert("Pop-up bloqueado. Use 'Baixar HTML' e abra o arquivo no navegador.");
+        URL.revokeObjectURL(url);
+      } else {
+        setTimeout(()=>URL.revokeObjectURL(url), 60000);
+      }
+    } catch(e) {
+      alert("Erro ao abrir em nova aba: " + e.message);
+    }
+  };
+
+  if (preview) {
+    return (
+      <div style={{...S.modal, padding:10}} onClick={(e)=>{if(e.target===e.currentTarget)setPreview(null);}}>
+        <div style={{background:"#fff",width:"100%",maxWidth:960,height:"90vh",borderRadius:8,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+          <div style={{padding:"10px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",background:C.bg2}}>
+            <div style={{color:C.text,fontSize:14,fontWeight:600}}>Pré-visualização do Relatório</div>
+            <div style={{display:"flex",gap:6}}>
+              <button style={{...S.btn("ghost"),fontSize:11}} onClick={()=>setPreview(null)}>← Voltar</button>
+              <button style={{...S.btn("ghost"),fontSize:11}} onClick={openInNewTab}>↗ Nova aba</button>
+              <button style={{...S.btn("ghost"),fontSize:11}} onClick={downloadHtml}>💾 Baixar HTML</button>
+              <button style={{...S.btn("primary"),fontSize:11}} onClick={doPrint}>🖨 Imprimir / PDF</button>
+            </div>
+          </div>
+          <iframe
+            ref={previewRef}
+            srcDoc={preview}
+            title="Preview do Relatório"
+            style={{flex:1,border:"none",width:"100%",background:"#fff"}}
+          />
+          <div style={{padding:"8px 16px",background:C.bg3,borderTop:`1px solid ${C.border}`,fontSize:10.5,color:C.text2,fontFamily:"monospace"}}>
+            💡 <strong>Imprimir / PDF:</strong> usa o diálogo do navegador — escolha "Salvar como PDF" para gerar o arquivo. <strong>Baixar HTML:</strong> salva o arquivo; abra no navegador e imprima em PDF manualmente.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={S.modal} onClick={onClose}>
@@ -5048,9 +5222,11 @@ function ExportModal({p, onClose}){
             </label>
           ))}
         </div>
-        <div style={{padding:"12px 20px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8,justifyContent:"flex-end"}}>
+        <div style={{padding:"12px 20px",borderTop:`1px solid ${C.border}`,display:"flex",gap:8,justifyContent:"flex-end",flexWrap:"wrap"}}>
           <button style={S.btn("ghost")} onClick={onClose}>Cancelar</button>
-          <button style={S.btn("primary")} onClick={generatePdf}>📄 Gerar PDF</button>
+          <button style={S.btn("ghost")} onClick={downloadHtml}>💾 Baixar HTML</button>
+          <button style={S.btn("ghost")} onClick={openInNewTab}>↗ Nova aba</button>
+          <button style={S.btn("primary")} onClick={generatePdf}>👁 Pré-visualizar + PDF</button>
         </div>
       </div>
     </div>
@@ -5063,10 +5239,12 @@ function buildReportHtml(p, sel){
   const fases = p.fases || [];
   const faseShort = (nome, i) => {
     if (!nome) return `F${i+1}`;
-    const n = nome.trim();
+    const n = nome.replace(/\([^)]*\)/g, "").replace(/[^\wÀ-ÿ\s]/g, " ").trim();
+    if (!n) return `F${i+1}`;
     if (n.length <= 5) return n.toUpperCase();
-    const words = n.split(/\s+/);
-    if (words.length === 1) return n.slice(0,3).toUpperCase();
+    const words = n.split(/\s+/).filter(w => w.length > 0 && /[a-zA-ZÀ-ÿ]/.test(w[0]));
+    if (words.length === 0) return `F${i+1}`;
+    if (words.length === 1) return words[0].slice(0,3).toUpperCase();
     return words.map(w=>w[0]).join("").slice(0,4).toUpperCase();
   };
 
@@ -5326,6 +5504,12 @@ function buildReportHtml(p, sel){
   // BCF
   if (sel.bcf) {
     parts.push(`<div class="section-new"><h2>11. BCF / Protocolo de Colaboração</h2>`);
+    parts.push(`<h3>11.1 Plataformas do Projeto</h3>`);
+    parts.push(`<table><thead><tr><th style="width:30%">Plataforma</th><th style="width:20%">Nome</th><th>Link / Descrição</th></tr></thead><tbody>`);
+    parts.push(`<tr><td style="font-weight:600">📁 Repositório</td><td>${esc(p.repositorio||"—")}</td><td>${p.repositorioLink?`<a href="${esc(p.repositorioLink)}" style="color:#0b5394;word-break:break-all">${esc(p.repositorioLink)}</a>`:"<em>(não informado)</em>"}<br/><span class="small">${esc(p.repositorioDesc||"")}</span></td></tr>`);
+    parts.push(`<tr><td style="font-weight:600">🔗 CDE / BIM</td><td>${esc(p.cde||"—")}</td><td>${p.cdeLink?`<a href="${esc(p.cdeLink)}" style="color:#0b5394;word-break:break-all">${esc(p.cdeLink)}</a>`:"<em>(não informado)</em>"}<br/><span class="small">${esc(p.cdeDesc||"")}</span></td></tr>`);
+    parts.push(`</tbody></table>`);
+    parts.push(`<h3>11.2 Nomenclatura de Issues</h3>`);
     parts.push(`<div class="callout"><strong>Nomenclatura:</strong> [DSC1|DSC2] – DESCRIÇÃO OBJETIVA · APENAS a coordenação pode fechar issues.</div>`);
     parts.push(`<table><thead><tr><th>Sigla</th><th>Disciplina</th></tr></thead><tbody>`);
     [["ARQ","Arquitetura"],["EST","Estrutura"],["CLI","Ar Condicionado"],["HID","Hidráulica"],["ELE","Elétrica"],["VED","Vedações"],["FUN","Fundação"],["MET","Estrutura Metálica"],["COO","Coordenação"],["BIM","Implementação BIM"]].forEach(([s,d])=>parts.push(`<tr><td style="font-family:monospace;font-weight:700">${esc(s)}</td><td>${esc(d)}</td></tr>`));
@@ -5364,22 +5548,28 @@ function buildReportHtml(p, sel){
   parts.push(`</body></html>`);
   return parts.join("");
 }
-// ─── TAB: GUIA ISO 19650 — embutido via iframe + Blob URL ────────────────────
+// ─── TAB: GUIA ISO 19650 — embutido via iframe srcDoc ───────────────────────
 // Preserva 100% da funcionalidade do guia_iso.html original (Kanban, Gantt, modais, drag-drop, SVG)
+// Usa srcDoc (atributo direto) que funciona em artifacts, Claude.ai e qualquer ambiente
 function TabGuiaIso(){
-  const iframeRef = useRef(null);
-  const [blobUrl, setBlobUrl] = useState(null);
   const [fullscreen, setFullscreen] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(()=>{
-    const blob = new Blob([GUIA_HTML], {type: "text/html; charset=utf-8"});
-    const url = URL.createObjectURL(blob);
-    setBlobUrl(url);
-    return () => URL.revokeObjectURL(url);
+    // Pequeno delay para dar tempo de renderizar a UI antes do iframe pesado
+    const t = setTimeout(()=>setReady(true), 50);
+    return () => clearTimeout(t);
   }, []);
 
   const openInNewTab = () => {
-    if (blobUrl) window.open(blobUrl, "_blank");
+    try {
+      const blob = new Blob([GUIA_HTML], {type: "text/html; charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(()=>URL.revokeObjectURL(url), 60000);
+    } catch(e) {
+      alert("Não foi possível abrir em nova aba. Verifique o bloqueador de pop-ups.");
+    }
   };
 
   const containerStyle = fullscreen ? {
@@ -5404,7 +5594,7 @@ function TabGuiaIso(){
           display:"flex", justifyContent:"space-between", alignItems:"center",
           background: C.bg3, flexShrink:0,
         }}>
-          <div style={{display:"flex", alignItems:"center", gap:10}}>
+          <div style={{display:"flex", alignItems:"center", gap:10, flexWrap:"wrap"}}>
             <span style={{fontSize:10.5, color:C.accentLight, fontFamily:"monospace", letterSpacing:"0.08em", textTransform:"uppercase"}}>
               🧭 Guia ISO 19650 · Interativo
             </span>
@@ -5419,18 +5609,17 @@ function TabGuiaIso(){
             </button>
           </div>
         </div>
-        <div style={{flex:1, minHeight: fullscreen ? "auto" : 700, background:"#fff", position:"relative"}}>
-          {blobUrl ? (
+        <div style={{flex:1, minHeight: fullscreen ? "auto" : 720, background:"#f8f9fb", position:"relative"}}>
+          {ready ? (
             <iframe
-              ref={iframeRef}
-              src={blobUrl}
+              srcDoc={GUIA_HTML}
               title="Guia ISO 19650"
-              style={{width:"100%", height: fullscreen ? "100%" : 700, border:"none", display:"block"}}
-              sandbox="allow-scripts allow-same-origin allow-popups allow-modals"
+              style={{width:"100%", height: fullscreen ? "100%" : 720, border:"none", display:"block", background:"#f8f9fb"}}
             />
           ) : (
-            <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:400,color:C.text3}}>
-              Carregando guia…
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:400,color:C.text3,flexDirection:"column",gap:10}}>
+              <div style={{width:32,height:32,border:`2px solid ${C.accentLight}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+              <span style={{fontFamily:"monospace",fontSize:11}}>Carregando guia…</span>
             </div>
           )}
         </div>
@@ -5438,7 +5627,7 @@ function TabGuiaIso(){
       {!fullscreen && (
         <div style={{...S.callout("blue"), fontSize:11}}>
           <strong style={{fontSize:10,fontFamily:"monospace",display:"block",marginBottom:3}}>Sobre este guia</strong>
-          Este é o Guia Prático ISO 19650 em formato interativo. Contém 5 visões (Kanban geral, Kanban por fase, Gantt, Fluxo temporal e por PCD, Exemplo real), modais explicativos para cada conceito (EIR, PIR, AIR, OIR, CDE, LOIN, TIDP, MIDP, PIM, AIM, S0/S1/S2/S3), diagramas SVG animados e exemplos reais de documentação. A guia é completa e funcional — clique em qualquer card, badge ou ícone ⓘ para ver detalhes.
+          Guia Prático ISO 19650 em formato interativo — contém Kanban (geral, por fase, integrado ISO-1+ISO-2), Gantt, fluxos normativos, diagramas SVG e exemplos reais. Clique em qualquer card, badge ou ícone ⓘ para ver detalhes. Use "↗ Nova aba" para abrir em janela separada.
         </div>
       )}
     </div>
